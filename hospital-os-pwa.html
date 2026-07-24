@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Suvidha Hospital — Reception &amp; Billing OS</title>
+<meta name="description" content="Suvidha Hospital Reception & Billing Management System" />
+<meta name="theme-color" content="#0B1730" />
+
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Suvidha Hospital" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+<script src="https://unpkg.com/react-is@18/umd/react-is.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+<style>
+  html, body { font-family: 'Inter', sans-serif; margin:0; }
+  .font-display { font-family: 'Outfit', 'Inter', sans-serif; }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block; vertical-align: middle; user-select: none;
+  }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+  #boot-loader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: #0B1730; color: white; font-family: 'Inter', sans-serif; font-size: 14px; z-index: 9999; letter-spacing:.02em; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform:none; } }
+</style>
+</head>
+<body class="bg-slate-50">
+<div id="boot-loader">Loading Suvidha Hospital OS&hellip;</div>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useContext, createContext, useRef } = React;
+const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } = Recharts;
+
+/* ============================= MATERIAL ICON FACTORY ============================= */
+
+function MaterialIcon(glyph) {
+  return function IconComp({ size = 18, className = "", style = {}, color, fill, strokeWidth, ...rest }) {
+    return React.createElement(
+      "span",
+      {
+        className: "material-symbols-outlined " + className,
+        style: { fontSize: size, lineHeight: 1, ...(color ? { color } : {}), ...style },
+        "aria-hidden": "true",
+        ...rest
+      },
+      glyph
+    );
+  };
+}
+const LayoutDashboard = MaterialIcon("dashboard");
+const Users = MaterialIcon("group");
+const CalendarDays = MaterialIcon("calendar_month");
+const Receipt = MaterialIcon("receipt_long");
+const BedDouble = MaterialIcon("bed");
+const FileBarChart2 = MaterialIcon("bar_chart");
+const Stethoscope = MaterialIcon("medical_services");
+const Pill = MaterialIcon("medication");
+const FlaskConical = MaterialIcon("science");
+const SettingsIcon = MaterialIcon("settings");
+const UserCog = MaterialIcon("manage_accounts");
+const LogOut = MaterialIcon("logout");
+const Bell = MaterialIcon("notifications");
+const Search = MaterialIcon("search");
+const ChevronDown = MaterialIcon("expand_more");
+const Plus = MaterialIcon("add");
+const Printer = MaterialIcon("print");
+const MessageCircle = MaterialIcon("chat");
+const Phone = MaterialIcon("call");
+const Mail = MaterialIcon("mail");
+const MapPin = MaterialIcon("location_on");
+const Droplet = MaterialIcon("water_drop");
+const Upload = MaterialIcon("upload");
+const FilterIcon = MaterialIcon("filter_list");
+const Download = MaterialIcon("download");
+const QrCode = MaterialIcon("qr_code_2");
+const CheckCircle2 = MaterialIcon("check_circle");
+const Clock = MaterialIcon("schedule");
+const AlertTriangle = MaterialIcon("warning");
+const TrendingUp = MaterialIcon("trending_up");
+const IndianRupeeIcon = MaterialIcon("currency_rupee");
+const Activity = MaterialIcon("monitor_heart");
+const HeartPulse = MaterialIcon("favorite");
+const ClipboardList = MaterialIcon("checklist");
+const Menu = MaterialIcon("menu");
+const X = MaterialIcon("close");
+const Eye = MaterialIcon("visibility");
+const EyeOff = MaterialIcon("visibility_off");
+const Lock = MaterialIcon("lock");
+const UserIcon = MaterialIcon("person");
+const ShieldCheck = MaterialIcon("verified_user");
+const Sparkles = MaterialIcon("auto_awesome");
+const ChevronRight = MaterialIcon("chevron_right");
+const Barcode = MaterialIcon("qr_code");
+const PackageSearch = MaterialIcon("inventory_2");
+const PackagePlus = MaterialIcon("add_box");
+const Building2 = MaterialIcon("domain");
+const Bed = MaterialIcon("bed");
+const Wallet = MaterialIcon("account_balance_wallet");
+const FileCheck2 = MaterialIcon("fact_check");
+const Camera = MaterialIcon("photo_camera");
+const Star = MaterialIcon("star");
+const ArrowUpRight = MaterialIcon("north_east");
+const ArrowDownRight = MaterialIcon("south_east");
+const Trash2 = MaterialIcon("delete");
+const Edit3 = MaterialIcon("edit");
+const PhoneCall = MaterialIcon("call");
+const ScanLine = MaterialIcon("document_scanner");
+const Save = MaterialIcon("save");
+
+/* ============================= UTILITIES ============================= */
+
+const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const nowTime = () => new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+const fmtDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+const digitsOnly = (s) => (s || "").replace(/\D/g, "");
+const uid = (prefix) => prefix + "-" + Math.floor(1000 + Math.random() * 9000);
+
+function usePersistentState(key, initialValue) {
+  const [state, setState] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : initialValue;
+    } catch (e) { return initialValue; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
+  }, [key, state]);
+  return [state, setState];
+}
+
+function waLink(mobile, text) {
+  const digits = digitsOnly(mobile);
+  const num = digits.length === 10 ? "91" + digits : digits;
+  return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+}
+
+function printDocument(title, bodyHtml) {
+  const win = window.open("", "_blank", "width=800,height=900");
+  if (!win) { alert("Please allow pop-ups to print."); return; }
+  win.document.write(`
+    <!DOCTYPE html><html><head><title>${title}</title>
+    <meta charset="utf-8"/>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #1e293b; padding: 28px; max-width: 780px; margin: 0 auto; }
+      h1,h2,h3 { margin: 0; }
+      table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+      th, td { text-align: left; padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+      th { color: #64748b; text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+      .right { text-align: right; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1e293b; padding-bottom:14px; margin-bottom:14px;}
+      .brand { font-size: 20px; font-weight: 800; }
+      .muted { color:#64748b; font-size:12px; }
+      .total-row td { font-weight:800; font-size:16px; border-top:2px solid #1e293b; border-bottom:none; }
+      .footer { text-align:center; margin-top: 30px; font-size: 11px; color: #94a3b8; }
+    </style>
+    </head><body>${bodyHtml}
+    <div class="footer">Software developed by Suresh Digitals, Chittoor · Cell: 9347383483</div>
+    <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>
+  `);
+  win.document.close();
+}
+
+function csvDownload(filename, rows) {
+  const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ============================= TOAST SYSTEM ============================= */
+
+const ToastContext = createContext(null);
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const notify = (message, type = "success") => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t, { id, message, type }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+  };
+  return (
+    <ToastContext.Provider value={notify}>
+      {children}
+      <div className="fixed bottom-4 right-4 z-[999] space-y-2 w-[90vw] max-w-sm">
+        {toasts.map((t) => (
+          <div key={t.id} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold text-white animate-[fadeIn_.2s_ease]
+            ${t.type === "error" ? "bg-rose-600" : t.type === "info" ? "bg-blue-600" : "bg-emerald-600"}`}>
+            <CheckCircle2 size={18} />
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+function useToast() { return useContext(ToastContext); }
+
+/* ============================= SEED DATA ============================= */
+
+const INITIAL_DOCTORS = [
+  { id: 1, name: "Dr. Rajesh Kumar", dept: "Cardiology", qual: "MD, DM Cardiology", fee: 800, exp: "18 yrs", rating: 4.8, avail: "Available", days: "Mon–Sat", time: "9:00 AM – 1:00 PM", color: "bg-blue-500" },
+  { id: 2, name: "Dr. Priya Sharma", dept: "Gynecology", qual: "MS OBG", fee: 700, exp: "12 yrs", rating: 4.9, avail: "Available", days: "Mon–Fri", time: "10:00 AM – 4:00 PM", color: "bg-emerald-500" },
+  { id: 3, name: "Dr. Anil Mehta", dept: "Orthopedics", qual: "MS Ortho", fee: 900, exp: "20 yrs", rating: 4.7, avail: "On Leave", days: "Tue–Sat", time: "11:00 AM – 3:00 PM", color: "bg-amber-500" },
+  { id: 4, name: "Dr. Sunita Reddy", dept: "Pediatrics", qual: "MD Pediatrics", fee: 600, exp: "9 yrs", rating: 4.9, avail: "Available", days: "Mon–Sat", time: "9:00 AM – 12:00 PM", color: "bg-pink-500" },
+  { id: 5, name: "Dr. Vikram Singh", dept: "Neurology", qual: "DM Neurology", fee: 1200, exp: "15 yrs", rating: 4.6, avail: "Busy", days: "Mon–Fri", time: "2:00 PM – 6:00 PM", color: "bg-violet-500" },
+  { id: 6, name: "Dr. Kavita Nair", dept: "Dermatology", qual: "MD Skin & VD", fee: 650, exp: "7 yrs", rating: 4.8, avail: "Available", days: "Mon–Sat", time: "4:00 PM – 8:00 PM", color: "bg-rose-500" },
+  { id: 7, name: "Dr. Arjun Patel", dept: "General Medicine", qual: "MBBS, MD", fee: 500, exp: "11 yrs", rating: 4.7, avail: "Available", days: "Mon–Sun", time: "8:00 AM – 2:00 PM", color: "bg-cyan-500" },
+  { id: 8, name: "Dr. Meera Iyer", dept: "ENT", qual: "MS ENT", fee: 600, exp: "10 yrs", rating: 4.5, avail: "Available", days: "Mon–Sat", time: "1:00 PM – 5:00 PM", color: "bg-indigo-500" },
+];
+
+const INITIAL_PATIENTS = [
+  { uhid: "UHID-24801", name: "Ramesh Gupta", age: 54, gender: "Male", mobile: "9876543210", dept: "Cardiology", doctor: "Dr. Rajesh Kumar", type: "OP", status: "Consulted", date: "09 Jul 2026" },
+  { uhid: "UHID-24802", name: "Sunita Devi", age: 32, gender: "Female", mobile: "9123456780", dept: "Gynecology", doctor: "Dr. Priya Sharma", type: "OP", status: "Waiting", date: "09 Jul 2026" },
+  { uhid: "UHID-24803", name: "Amit Verma", age: 45, gender: "Male", mobile: "9988766554", dept: "Orthopedics", doctor: "Dr. Anil Mehta", type: "IP", status: "Admitted", date: "08 Jul 2026" },
+  { uhid: "UHID-24804", name: "Pooja Yadav", age: 7, gender: "Female", mobile: "9001122334", dept: "Pediatrics", doctor: "Dr. Sunita Reddy", type: "OP", status: "Consulted", date: "09 Jul 2026" },
+  { uhid: "UHID-24805", name: "Suresh Iyer", age: 61, gender: "Male", mobile: "9812345670", dept: "Neurology", doctor: "Dr. Vikram Singh", type: "IP", status: "Critical", date: "07 Jul 2026" },
+  { uhid: "UHID-24806", name: "Anjali Desai", age: 28, gender: "Female", mobile: "9765432109", dept: "Dermatology", doctor: "Dr. Kavita Nair", type: "OP", status: "Waiting", date: "09 Jul 2026" },
+  { uhid: "UHID-24807", name: "Vikas Malhotra", age: 39, gender: "Male", mobile: "9654321098", dept: "General Medicine", doctor: "Dr. Arjun Patel", type: "OP", status: "Consulted", date: "09 Jul 2026" },
+  { uhid: "UHID-24808", name: "Deepa Nair", age: 50, gender: "Female", mobile: "9543210987", dept: "ENT", doctor: "Dr. Meera Iyer", type: "OP", status: "Waiting", date: "09 Jul 2026" },
+];
+
+const INITIAL_APPOINTMENTS = [
+  { token: "A-101", time: "09:00 AM", patient: "Ramesh Gupta", doctor: "Dr. Rajesh Kumar", dept: "Cardiology", status: "Completed" },
+  { token: "A-102", time: "09:30 AM", patient: "Sunita Devi", doctor: "Dr. Priya Sharma", dept: "Gynecology", status: "In Consultation" },
+  { token: "A-103", time: "10:00 AM", patient: "Pooja Yadav", doctor: "Dr. Sunita Reddy", dept: "Pediatrics", status: "Completed" },
+  { token: "A-104", time: "10:30 AM", patient: "Anjali Desai", doctor: "Dr. Kavita Nair", dept: "Dermatology", status: "Waiting" },
+  { token: "A-105", time: "11:00 AM", patient: "Vikas Malhotra", doctor: "Dr. Arjun Patel", dept: "General Medicine", status: "Waiting" },
+  { token: "A-106", time: "11:30 AM", patient: "Deepa Nair", doctor: "Dr. Meera Iyer", dept: "ENT", status: "Waiting" },
+  { token: "A-107", time: "12:00 PM", patient: "Rahul Joshi", doctor: "Dr. Rajesh Kumar", dept: "Cardiology", status: "Cancelled" },
+];
+
+const INITIAL_MEDICINES = [
+  { id: 1, name: "Paracetamol 500mg", batch: "PCM2245", stock: 42, reorder: 100, expiry: "12/2026", gst: 12, supplier: "Cipla Ltd", price: 1.5, status: "Low Stock" },
+  { id: 2, name: "Amoxicillin 250mg", batch: "AMX1187", stock: 320, reorder: 100, expiry: "08/2027", gst: 12, supplier: "Sun Pharma", price: 4.2, status: "In Stock" },
+  { id: 3, name: "Azithromycin 500mg", batch: "AZT9081", stock: 15, reorder: 50, expiry: "03/2026", gst: 12, supplier: "Zydus", price: 9.8, status: "Critical" },
+  { id: 4, name: "Metformin 500mg", batch: "MET5521", stock: 210, reorder: 80, expiry: "11/2027", gst: 5, supplier: "Cipla Ltd", price: 2.1, status: "In Stock" },
+  { id: 5, name: "Insulin Glargine", batch: "INS3390", stock: 8, reorder: 20, expiry: "01/2026", gst: 5, supplier: "Biocon", price: 420, status: "Critical" },
+  { id: 6, name: "Cetirizine 10mg", batch: "CTZ7723", stock: 500, reorder: 100, expiry: "06/2027", gst: 12, supplier: "Dr. Reddy's", price: 1.1, status: "In Stock" },
+];
+
+const INITIAL_LAB = [
+  { id: "LAB-5501", patient: "Amit Verma", test: "CBC + LFT", collected: "08:40 AM", status: "Report Ready", tech: "R. Kannan" },
+  { id: "LAB-5502", patient: "Ramesh Gupta", test: "Lipid Profile", collected: "09:10 AM", status: "In Progress", tech: "S. Fathima" },
+  { id: "LAB-5503", patient: "Suresh Iyer", test: "MRI Brain (Ref)", collected: "07:50 AM", status: "Report Ready", tech: "Outsourced" },
+  { id: "LAB-5504", patient: "Pooja Yadav", test: "Urine Routine", collected: "10:05 AM", status: "Sample Collected", tech: "R. Kannan" },
+  { id: "LAB-5505", patient: "Vikas Malhotra", test: "HbA1c", collected: "—", status: "Pending Collection", tech: "—" },
+];
+
+const INITIAL_USERS = [
+  { id: 1, name: "Kavya Menon", role: "Admin", email: "kavya.menon@hospital.in", dept: "Administration", status: "Active" },
+  { id: 2, name: "Rahul Joshi", role: "Reception", email: "rahul.joshi@hospital.in", dept: "Front Office", status: "Active" },
+  { id: 3, name: "Dr. Rajesh Kumar", role: "Doctor", email: "rajesh.kumar@hospital.in", dept: "Cardiology", status: "Active" },
+  { id: 4, name: "Anita Fernandes", role: "Nurse", email: "anita.f@hospital.in", dept: "IPD Ward 2", status: "Active" },
+  { id: 5, name: "R. Kannan", role: "Lab", email: "kannan.r@hospital.in", dept: "Laboratory", status: "Active" },
+  { id: 6, name: "Meenal Joshi", role: "Pharmacy", email: "meenal.j@hospital.in", dept: "Pharmacy", status: "On Leave" },
+];
+
+const INITIAL_ROOMS = [
+  { no: "101-A", type: "General Ward", status: "Occupied", patient: "Amit Verma" },
+  { no: "101-B", type: "General Ward", status: "Vacant", patient: null },
+  { no: "204-A", type: "Semi-Private", status: "Occupied", patient: "Suresh Iyer" },
+  { no: "204-B", type: "Semi-Private", status: "Vacant", patient: null },
+  { no: "301", type: "Private A/C", status: "Vacant", patient: null },
+  { no: "302", type: "Private A/C", status: "Vacant", patient: null },
+  { no: "ICU-1", type: "ICU", status: "Vacant", patient: null },
+  { no: "ICU-2", type: "ICU", status: "Vacant", patient: null },
+];
+
+const INITIAL_BILLS = [
+  { id: "SUV-INV-3320", type: "IP", patient: "Amit Verma", mobile: "9988766554", amount: 32000, mode: "UPI", date: todayISO(), status: "Due" },
+  { id: "SUV-INV-3325", type: "OP", patient: "Anjali Desai", mobile: "9765432109", amount: 1450, mode: "Cash", date: todayISO(), status: "Due" },
+  { id: "SUV-INV-3328", type: "Pharmacy", patient: "Deepa Nair", mobile: "9543210987", amount: 890, mode: "UPI", date: todayISO(), status: "Due" },
+  { id: "SUV-INV-3311", type: "IP", patient: "Suresh Iyer", mobile: "9812345670", amount: 48500, mode: "Insurance", date: "2026-07-07", status: "Overdue" },
+];
+
+const INITIAL_SETTINGS = {
+  hospitalName: "Suvidha Multi-Specialty Hospital",
+  regNo: "KA/HOSP/2014/00921",
+  contact: "080-4123 5566",
+  email: "info@suvidhahospital.in",
+  gstin: "29ABCDE1234F1Z5",
+  address: "45, Residency Road, Bengaluru, Karnataka 560025",
+  invoicePrefix: "SUV-INV-",
+  nextInvoiceNo: 3329,
+  gstRate: 5,
+  footerNote: "Thank you for choosing Suvidha Hospital. Get well soon!",
+  showQr: true,
+  smsEnabled: true,
+  whatsappEnabled: true,
+  emailEnabled: false,
+};
+
+const DEPARTMENTS = ["Cardiology", "Orthopedics", "Gynecology", "Pediatrics", "Neurology", "General Medicine", "ENT", "Dermatology"];
+
+/* ============================= DATA CONTEXT ============================= */
+
+const DataContext = createContext(null);
+function useData() { return useContext(DataContext); }
+
+function DataProvider({ children }) {
+  const [patients, setPatients] = usePersistentState("suv_patients", INITIAL_PATIENTS);
+  const [doctors, setDoctors] = usePersistentState("suv_doctors", INITIAL_DOCTORS);
+  const [appointments, setAppointments] = usePersistentState("suv_appointments", INITIAL_APPOINTMENTS);
+  const [medicines, setMedicines] = usePersistentState("suv_medicines", INITIAL_MEDICINES);
+  const [labTests, setLabTests] = usePersistentState("suv_lab", INITIAL_LAB);
+  const [staffUsers, setStaffUsers] = usePersistentState("suv_users", INITIAL_USERS);
+  const [rooms, setRooms] = usePersistentState("suv_rooms", INITIAL_ROOMS);
+  const [bills, setBills] = usePersistentState("suv_bills", INITIAL_BILLS);
+  const [settings, setSettings] = usePersistentState("suv_settings", INITIAL_SETTINGS);
+  const [uhidSeq, setUhidSeq] = usePersistentState("suv_uhid_seq", 24809);
+  const [tokenSeq, setTokenSeq] = usePersistentState("suv_token_seq", 108);
+  const [labSeq, setLabSeq] = usePersistentState("suv_lab_seq", 5506);
+  const [lastBill, setLastBill] = usePersistentState("suv_last_bill", null);
+
+  const nextUhid = () => { const v = `UHID-${uhidSeq}`; setUhidSeq((s) => s + 1); return v; };
+  const nextToken = () => { const v = `A-${tokenSeq}`; setTokenSeq((s) => s + 1); return v; };
+  const nextLabId = () => { const v = `LAB-${labSeq}`; setLabSeq((s) => s + 1); return v; };
+  const nextInvoiceNo = () => {
+    const v = `${settings.invoicePrefix}${settings.nextInvoiceNo}`;
+    setSettings((s) => ({ ...s, nextInvoiceNo: s.nextInvoiceNo + 1 }));
+    return v;
+  };
+
+  const addPatient = (p) => {
+    const uhid = nextUhid();
+    const rec = { uhid, status: "Waiting", date: fmtDate(new Date()), ...p };
+    setPatients((list) => [rec, ...list]);
+    return rec;
+  };
+
+  const addAppointment = (a) => {
+    const token = nextToken();
+    const rec = { token, status: "Waiting", ...a };
+    setAppointments((list) => [...list, rec]);
+    return rec;
+  };
+  const updateAppointmentStatus = (token, status) =>
+    setAppointments((list) => list.map((a) => (a.token === token ? { ...a, status } : a)));
+
+  const addDoctor = (d) => setDoctors((list) => [...list, { id: Date.now(), color: "bg-blue-500", rating: 4.5, avail: "Available", ...d }]);
+  const updateDoctor = (id, patch) => setDoctors((list) => list.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+  const deleteDoctor = (id) => setDoctors((list) => list.filter((d) => d.id !== id));
+
+  const addMedicine = (m) => setMedicines((list) => [...list, { id: Date.now(), status: "In Stock", ...m }]);
+  const updateMedicine = (id, patch) => setMedicines((list) => list.map((m) => {
+    if (m.id !== id) return m;
+    const updated = { ...m, ...patch };
+    updated.status = updated.stock <= updated.reorder * 0.2 ? "Critical" : updated.stock <= updated.reorder ? "Low Stock" : "In Stock";
+    return updated;
+  }));
+  const deleteMedicine = (id) => setMedicines((list) => list.filter((m) => m.id !== id));
+  const deductStock = (id, qty) => updateMedicine(id, { stock: Math.max(0, (medicines.find((m) => m.id === id)?.stock || 0) - qty) });
+
+  const addLabTest = (t) => { const id = nextLabId(); setLabTests((list) => [{ id, status: "Pending Collection", collected: "—", tech: "—", ...t }, ...list]); };
+  const cycleLabStatus = (id) => {
+    const order = ["Pending Collection", "Sample Collected", "In Progress", "Report Ready"];
+    setLabTests((list) => list.map((t) => {
+      if (t.id !== id) return t;
+      const idx = order.indexOf(t.status);
+      const next = order[Math.min(idx + 1, order.length - 1)];
+      return { ...t, status: next, collected: t.collected === "—" && idx === 0 ? nowTime() : t.collected };
+    }));
+  };
+
+  const addUser = (u) => setStaffUsers((list) => [...list, { id: Date.now(), status: "Active", ...u }]);
+  const updateUser = (id, patch) => setStaffUsers((list) => list.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  const deleteUser = (id) => setStaffUsers((list) => list.filter((u) => u.id !== id));
+
+  const admitPatient = (roomNo, patientData) => {
+    setRooms((list) => list.map((r) => (r.no === roomNo ? { ...r, status: "Occupied", patient: patientData.name } : r)));
+    const existing = patients.find((p) => p.uhid === patientData.uhid);
+    if (existing) {
+      setPatients((list) => list.map((p) => (p.uhid === patientData.uhid ? { ...p, type: "IP", status: "Admitted", room: roomNo } : p)));
+    } else {
+      addPatient({ ...patientData, type: "IP", room: roomNo });
+    }
+  };
+  const dischargePatient = (roomNo) => {
+    setRooms((list) => list.map((r) => (r.no === roomNo ? { ...r, status: "Cleaning", patient: null } : r)));
+  };
+
+  const recordBill = (bill) => {
+    const id = nextInvoiceNo();
+    const rec = { id, date: todayISO(), status: "Paid", ...bill };
+    setBills((list) => [rec, ...list]);
+    setLastBill(rec);
+    return rec;
+  };
+
+  const value = {
+    patients, setPatients, addPatient,
+    doctors, setDoctors, addDoctor, updateDoctor, deleteDoctor,
+    appointments, setAppointments, addAppointment, updateAppointmentStatus,
+    medicines, setMedicines, addMedicine, updateMedicine, deleteMedicine, deductStock,
+    labTests, setLabTests, addLabTest, cycleLabStatus,
+    staffUsers, setStaffUsers, addUser, updateUser, deleteUser,
+    rooms, setRooms, admitPatient, dischargePatient,
+    bills, setBills, recordBill, lastBill,
+    settings, setSettings,
+  };
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+}
+
+/* ============================= BACKUP UTILITY ============================= */
+
+function buildBackupSnapshot(data) {
+  return {
+    generatedAt: new Date().toISOString(),
+    hospital: data.settings.hospitalName,
+    patients: data.patients, appointments: data.appointments, doctors: data.doctors,
+    medicines: data.medicines, labTests: data.labTests, staffUsers: data.staffUsers,
+    rooms: data.rooms, bills: data.bills, settings: data.settings,
+  };
+}
+function downloadBackupNow(data) {
+  const snap = buildBackupSnapshot(data);
+  const blob = new Blob([JSON.stringify(snap, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url; a.download = `suvidha-hospital-backup-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  try { localStorage.setItem("suvidha_last_backup", stamp); } catch (e) {}
+  return stamp;
+}
+function useAutoDailyBackup() {
+  const data = useData();
+  useEffect(() => {
+    try {
+      const today = todayISO();
+      const last = localStorage.getItem("suvidha_last_backup");
+      if (last !== today) downloadBackupNow(data);
+    } catch (e) {}
+    // eslint-disable-next-line
+  }, []);
+}
+
+/* ============================= SHARED STYLES / BADGES ============================= */
+
+const statusStyle = {
+  Waiting: "bg-amber-100 text-amber-700 border-amber-200",
+  "In Consultation": "bg-blue-100 text-blue-700 border-blue-200",
+  Completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+  Consulted: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Admitted: "bg-blue-100 text-blue-700 border-blue-200",
+  Critical: "bg-rose-100 text-rose-700 border-rose-200",
+  Overdue: "bg-rose-100 text-rose-700 border-rose-200",
+  Due: "bg-amber-100 text-amber-700 border-amber-200",
+  Paid: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Occupied: "bg-rose-100 text-rose-700 border-rose-200",
+  Vacant: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Cleaning: "bg-amber-100 text-amber-700 border-amber-200",
+  "In Stock": "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "Low Stock": "bg-amber-100 text-amber-700 border-amber-200",
+  "Report Ready": "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
+  "Sample Collected": "bg-violet-100 text-violet-700 border-violet-200",
+  "Pending Collection": "bg-slate-100 text-slate-600 border-slate-200",
+  Active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "On Leave": "bg-amber-100 text-amber-700 border-amber-200",
+  Available: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Busy: "bg-amber-100 text-amber-700 border-amber-200",
+};
+function Badge({ label, extra = "" }) {
+  const cls = statusStyle[label] || "bg-slate-100 text-slate-600 border-slate-200";
+  return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls} ${extra}`}>{label}</span>;
+}
+
+function GlassCard({ children, className = "", ...rest }) {
+  return <div className={`bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_8px_30px_-12px_rgba(30,64,175,0.15)] ${className}`} {...rest}>{children}</div>;
+}
+function SectionTitle({ eyebrow, title, action }) {
+  return (
+    <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div>
+        {eyebrow && <div className="text-xs font-semibold tracking-wider text-blue-600 uppercase mb-0.5">{eyebrow}</div>}
+        <h2 className="text-lg font-bold text-slate-800 font-display">{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+function StatCard({ icon: Icon, label, value, delta, positive, tint }) {
+  return (
+    <GlassCard className="p-5 relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300">
+      <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl opacity-30 ${tint}`} />
+      <div className="flex items-start justify-between relative">
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-1.5">{label}</p>
+          <p className="text-2xl font-extrabold text-slate-800 font-display">{value}</p>
+          {delta && (
+            <div className={`flex items-center gap-1 mt-2 text-xs font-semibold ${positive ? "text-emerald-600" : "text-rose-600"}`}>
+              {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{delta}
+            </div>
+          )}
+        </div>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${tint} bg-opacity-15 text-slate-700`}>
+          <Icon size={20} strokeWidth={2} className="text-slate-800" />
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+function Field({ label, children, icon: Icon, className = "" }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="text-xs font-semibold text-slate-600 mb-1.5 block">{label}</span>
+      <div className="relative">
+        {Icon && <Icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />}
+        {children}
+      </div>
+    </label>
+  );
+}
+const inputCls = "w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition";
+const inputClsIcon = inputCls + " pl-9";
+
+function PrimaryBtn({ children, icon: Icon, className = "", ...rest }) {
+  return <button className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:from-blue-700 hover:to-blue-600 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`} {...rest}>{Icon && <Icon size={16} />}{children}</button>;
+}
+function GhostBtn({ children, icon: Icon, className = "", ...rest }) {
+  return <button className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all disabled:opacity-50 ${className}`} {...rest}>{Icon && <Icon size={16} />}{children}</button>;
+}
+function EmeraldBtn({ children, icon: Icon, className = "", ...rest }) {
+  return <button className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-[0.98] transition-all disabled:opacity-50 ${className}`} {...rest}>{Icon && <Icon size={16} />}{children}</button>;
+}
+function IconBtn({ icon: Icon, className = "", ...rest }) {
+  return <button className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${className}`} {...rest}><Icon size={15} /></button>;
+}
+function Th({ children, className = "" }) { return <th className={`text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 ${className}`}>{children}</th>; }
+function Td({ children, className = "" }) { return <td className={`px-4 py-3.5 text-sm text-slate-700 ${className}`}>{children}</td>; }
+function Avatar({ name, size = 36 }) {
+  const initials = (name || "?").split(" ").map((n) => n[0]).slice(0, 2).join("");
+  const colors = ["bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-violet-500", "bg-pink-500", "bg-cyan-500"];
+  const idx = (name || "").length % colors.length;
+  return <div style={{ width: size, height: size }} className={`rounded-full ${colors[idx]} text-white flex items-center justify-center text-xs font-bold shrink-0`}>{initials}</div>;
+}
+
+function Modal({ open, onClose, title, children, wide }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[88vh] overflow-y-auto`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <h3 className="text-base font-bold text-slate-800 font-display">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500"><X size={18} /></button>
+        </div>
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function DevCredit() {
+  return (
+    <p className="text-center text-[11px] py-3 text-slate-400">
+      Software developed by <span className="font-semibold">Suresh Digitals, Chittoor</span> · Cell: 9347383483
+    </p>
+  );
+}
+
+/* ============================= LOGIN PAGE ============================= */
+
+function LoginPage({ onLogin }) {
+  const [showPw, setShowPw] = useState(false);
+  const [username, setUsername] = useState("reception.rahul");
+  const [password, setPassword] = useState("suvidha@123");
+  const [error, setError] = useState("");
+  const notify = useToast();
+
+  const submit = (e) => {
+    e?.preventDefault();
+    if (!username.trim() || !password.trim()) { setError("Please enter both username and password."); return; }
+    setError("");
+    onLogin(username.trim());
+  };
+
+  return (
+    <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden bg-[#0B1730]">
+      <div className="absolute inset-0">
+        <div className="absolute -top-32 -left-32 w-[36rem] h-[36rem] bg-blue-600/30 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 -right-20 w-[32rem] h-[32rem] bg-emerald-500/25 rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-cyan-400/10 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-5xl mx-4 grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+        <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-blue-700/40 to-emerald-600/20 backdrop-blur-2xl border-r border-white/10 relative">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-lg"><HeartPulse className="text-blue-600" size={24} /></div>
+            <div>
+              <p className="text-white font-bold text-lg font-display leading-none">Suvidha Hospital</p>
+              <p className="text-white/50 text-xs mt-1">Multi-Specialty Care</p>
+            </div>
+          </div>
+          <div className="my-auto py-16">
+            <Sparkles className="text-emerald-300 mb-4" size={28} />
+            <h2 className="text-white text-3xl font-display font-bold leading-tight mb-3">Reception & Billing,<br />built for real hospitals.</h2>
+            <p className="text-white/60 text-sm max-w-xs leading-relaxed">OP/IP billing, appointments, pharmacy and lab — every action here actually saves.</p>
+          </div>
+          <div className="flex items-center gap-6 text-white/70 text-xs">
+            <div className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-300" /> NABH-ready</div>
+            <div className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-300" /> GST Compliant</div>
+            <div className="flex items-center gap-1.5"><Activity size={14} className="text-emerald-300" /> 99.9% Uptime</div>
+          </div>
+        </div>
+
+        <form onSubmit={submit} className="bg-white/95 backdrop-blur-xl p-8 sm:p-12 flex flex-col justify-center">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center"><HeartPulse className="text-white" size={20} /></div>
+            <p className="font-bold text-slate-800 font-display">Suvidha Hospital</p>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 font-display mb-1.5">Welcome back</h1>
+          <p className="text-sm text-slate-500 mb-8">Sign in to the reception & billing console.</p>
+
+          <div className="space-y-4">
+            <Field label="Username" icon={UserIcon}>
+              <input value={username} onChange={(e) => setUsername(e.target.value)} className={inputClsIcon} placeholder="Enter your username" />
+            </Field>
+            <Field label="Password" icon={Lock}>
+              <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClsIcon + " pr-10"} placeholder="Enter your password" />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </Field>
+            {error && <p className="text-xs font-semibold text-rose-600">{error}</p>}
+            <div className="flex items-center justify-between text-sm pt-1">
+              <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" defaultChecked className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" /> Remember me
+              </label>
+              <button type="button" onClick={() => notify("Password reset instructions sent to your registered email.", "info")} className="text-blue-600 font-semibold hover:underline">Forgot password?</button>
+            </div>
+            <PrimaryBtn type="submit" className="w-full justify-center py-3 mt-2">Sign in to Dashboard</PrimaryBtn>
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px bg-slate-200 flex-1" /><span className="text-xs text-slate-400">Quick access roles</span><div className="h-px bg-slate-200 flex-1" />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {["Reception", "Doctor", "Pharmacy", "Lab"].map((r) => (
+                <button type="button" key={r} onClick={() => onLogin(r)} className="text-[11px] font-semibold text-slate-500 border border-slate-200 rounded-lg py-2 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition">{r}</button>
+              ))}
+            </div>
+          </div>
+          <p className="text-center text-xs text-slate-400 mt-8">© 2026 Suvidha Hospital Information System · v4.2.1</p>
+          <DevCredit />
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= LAYOUT ============================= */
+
+const NAV = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "patients", label: "Patients", icon: Users },
+  { key: "appointments", label: "Appointments", icon: CalendarDays },
+  { key: "opbilling", label: "OP Billing", icon: Receipt },
+  { key: "ipadmission", label: "IP Admission", icon: BedDouble },
+  { key: "ipbilling", label: "IP Billing", icon: Wallet },
+  { key: "doctors", label: "Doctors", icon: Stethoscope },
+  { key: "pharmacy", label: "Pharmacy", icon: Pill },
+  { key: "lab", label: "Laboratory", icon: FlaskConical },
+  { key: "reports", label: "Reports", icon: FileBarChart2 },
+  { key: "users", label: "User Management", icon: UserCog },
+  { key: "settings", label: "Settings", icon: SettingsIcon },
+  { key: "receipt", label: "Receipt Preview", icon: FileCheck2 },
+];
+
+function Sidebar({ page, setPage, open, setOpen, currentUser, onLogout }) {
+  return (
+    <>
+      {open && <div onClick={() => setOpen(false)} className="fixed inset-0 bg-black/40 z-40 lg:hidden" />}
+      <aside className={`fixed lg:sticky top-0 h-screen z-50 w-64 shrink-0 bg-gradient-to-b from-[#0B1730] to-[#132445] text-white flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg shrink-0"><HeartPulse className="text-blue-600" size={22} /></div>
+          <div className="min-w-0">
+            <p className="font-bold font-display leading-none truncate">Suvidha Hospital</p>
+            <p className="text-white/40 text-[11px] mt-1">Reception & Billing OS</p>
+          </div>
+          <button onClick={() => setOpen(false)} className="ml-auto lg:hidden text-white/60"><X size={18} /></button>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {NAV.map((item) => {
+            const active = page === item.key;
+            return (
+              <button key={item.key} onClick={() => { setPage(item.key); setOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all relative group ${active ? "bg-white/10 text-white shadow-inner" : "text-white/55 hover:text-white hover:bg-white/5"}`}>
+                {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-gradient-to-b from-blue-400 to-emerald-400" />}
+                <item.icon size={17} className={active ? "text-emerald-300" : "text-white/40 group-hover:text-white/70"} />
+                {item.label}
+                {active && <ChevronRight size={14} className="ml-auto text-white/40" />}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="p-3 border-t border-white/10">
+          <button onClick={onLogout} className="w-full flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 cursor-pointer">
+            <Avatar name={currentUser} />
+            <div className="min-w-0 text-left">
+              <p className="text-sm font-semibold truncate">{currentUser}</p>
+              <p className="text-[11px] text-white/40">Tap to sign out</p>
+            </div>
+            <LogOut size={16} className="ml-auto text-white/40" />
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function Topbar({ setOpen, title, currentUser }) {
+  const notify = useToast();
+  const [q, setQ] = useState("");
+  return (
+    <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-slate-200/70 px-4 sm:px-6 py-3.5 flex items-center gap-4">
+      <button onClick={() => setOpen(true)} className="lg:hidden text-slate-500"><Menu size={22} /></button>
+      <div className="hidden sm:block">
+        <p className="text-xs text-slate-400 font-medium">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+        <h1 className="text-base font-bold text-slate-800 font-display">{title}</h1>
+      </div>
+      <div className="flex-1 max-w-md ml-2 relative hidden md:block">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input value={q} onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) { notify(`Searching for "${q}"…`, "info"); } }}
+          placeholder="Search patients, UHID, doctors, invoices… (press Enter)" className="w-full rounded-xl border border-slate-200 bg-white/70 pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+      </div>
+      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <button onClick={() => notify("No new notifications 🎉", "info")} className="relative w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600">
+          <Bell size={18} /><span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+        </button>
+        <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-200">
+          <Avatar name={currentUser} size={34} />
+          <div><p className="text-xs font-semibold text-slate-700 leading-none">{currentUser}</p><p className="text-[10px] text-slate-400 mt-0.5">Reception Desk 1</p></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= DASHBOARD ============================= */
+
+const revenueOverview = [{ day: "Mon", revenue: 182000 }, { day: "Tue", revenue: 154000 }, { day: "Wed", revenue: 210000 }, { day: "Thu", revenue: 198000 }, { day: "Fri", revenue: 245000 }, { day: "Sat", revenue: 268000 }, { day: "Sun", revenue: 176000 }];
+const opIpTrend = [{ day: "Mon", OP: 120, IP: 18 }, { day: "Tue", OP: 98, IP: 14 }, { day: "Wed", OP: 135, IP: 21 }, { day: "Thu", OP: 110, IP: 17 }, { day: "Fri", OP: 150, IP: 24 }, { day: "Sat", OP: 168, IP: 26 }, { day: "Sun", OP: 88, IP: 12 }];
+const monthlyRevenue = [{ month: "Feb", value: 3800000 }, { month: "Mar", value: 4200000 }, { month: "Apr", value: 3950000 }, { month: "May", value: 4650000 }, { month: "Jun", value: 5100000 }, { month: "Jul", value: 2950000 }];
+const deptColors = { Cardiology: "#2563EB", Orthopedics: "#10B981", Gynecology: "#F59E0B", Pediatrics: "#EC4899", Neurology: "#8B5CF6", "General Medicine": "#06B6D4", ENT: "#6366F1", Dermatology: "#F43F5E" };
+
+function Dashboard({ setPage }) {
+  const { patients, appointments, bills, labTests, doctors } = useData();
+
+  const opCount = patients.filter((p) => p.type === "OP").length;
+  const ipCount = patients.filter((p) => p.type === "IP").length;
+  const revenueToday = bills.filter((b) => b.date === todayISO()).reduce((s, b) => s + Number(b.amount), 0);
+  const pendingBills = bills.filter((b) => b.status !== "Paid");
+  const pendingAmount = pendingBills.reduce((s, b) => s + Number(b.amount), 0);
+  const labPending = labTests.filter((t) => t.status !== "Report Ready").length;
+  const pharmacySales = bills.filter((b) => b.type === "Pharmacy" && b.date === todayISO()).reduce((s, b) => s + Number(b.amount), 0);
+
+  const deptPerformance = useMemo(() => {
+    const counts = {};
+    patients.forEach((p) => { counts[p.dept] = (counts[p.dept] || 0) + 1; });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+    return Object.entries(counts).map(([name, c]) => ({ name, value: Math.round((c / total) * 100), color: deptColors[name] || "#94A3B8" }));
+  }, [patients]);
+
+  const stats = [
+    { icon: Users, label: "Today's OP Patients", value: String(opCount), delta: "live count", positive: true, tint: "bg-blue-500" },
+    { icon: BedDouble, label: "Today's IP Patients", value: String(ipCount), delta: "live count", positive: true, tint: "bg-emerald-500" },
+    { icon: CalendarDays, label: "Appointments", value: String(appointments.length), delta: `${appointments.filter((a) => a.status === "Waiting").length} pending`, positive: false, tint: "bg-amber-500" },
+    { icon: IndianRupeeIcon, label: "Revenue Today", value: inr(revenueToday), delta: `${bills.filter((b) => b.date === todayISO()).length} bills`, positive: true, tint: "bg-emerald-500" },
+    { icon: Wallet, label: "Pending Bills", value: String(pendingBills.length), delta: `${inr(pendingAmount)} due`, positive: false, tint: "bg-rose-500" },
+    { icon: FlaskConical, label: "Lab Pending", value: String(labPending), delta: "in queue", positive: false, tint: "bg-violet-500" },
+    { icon: Pill, label: "Pharmacy Sales", value: inr(pharmacySales), delta: "today", positive: true, tint: "bg-cyan-500" },
+  ];
+
+  const quickActions = [
+    { label: "New Patient", icon: Plus, page: "patients", tint: "from-blue-600 to-blue-500" },
+    { label: "OP Billing", icon: Receipt, page: "opbilling", tint: "from-emerald-600 to-emerald-500" },
+    { label: "IP Admission", icon: BedDouble, page: "ipadmission", tint: "from-violet-600 to-violet-500" },
+    { label: "Pharmacy Bill", icon: Pill, page: "pharmacy", tint: "from-cyan-600 to-cyan-500" },
+    { label: "Lab Bill", icon: FlaskConical, page: "lab", tint: "from-amber-600 to-amber-500" },
+    { label: "Print Receipt", icon: Printer, page: "receipt", tint: "from-rose-600 to-rose-500" },
+  ];
+
+  const notifications = [
+    { icon: FlaskConical, text: `${labPending} lab test(s) awaiting report`, color: "text-emerald-600 bg-emerald-100" },
+    { icon: AlertTriangle, text: "Some medicines are below reorder level — check Pharmacy", color: "text-amber-600 bg-amber-100" },
+    { icon: Wallet, text: `${pendingBills.length} invoice(s) pending payment`, color: "text-violet-600 bg-violet-100" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        {quickActions.map((a) => (
+          <button key={a.label} onClick={() => setPage(a.page)} className="group flex flex-col items-center gap-2 py-4 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 hover:-translate-y-1 hover:shadow-lg transition-all">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${a.tint} flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform`}><a.icon size={18} /></div>
+            <span className="text-[11px] font-semibold text-slate-600 text-center px-1">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">{stats.map((s) => <StatCard key={s.label} {...s} />)}</div>
+
+      <div className="grid lg:grid-cols-3 gap-5">
+        <GlassCard className="p-5 lg:col-span-2">
+          <SectionTitle eyebrow="This week" title="Revenue Overview" action={<Badge label="Active" />} />
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={revenueOverview}>
+              <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2563EB" stopOpacity={0.35} /><stop offset="100%" stopColor="#2563EB" stopOpacity={0} /></linearGradient></defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <Tooltip formatter={(v) => inr(v)} contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }} />
+              <Area type="monotone" dataKey="revenue" stroke="#2563EB" strokeWidth={2.5} fill="url(#rev)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <SectionTitle title="OP vs IP" />
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={opIpTrend}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#94A3B8" }} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="OP" stroke="#2563EB" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="IP" stroke="#10B981" strokeWidth={2.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </GlassCard>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-5">
+        <GlassCard className="p-5 lg:col-span-2">
+          <SectionTitle eyebrow="Last 6 months" title="Monthly Revenue" />
+          <ResponsiveContainer width="100%" height={230}>
+            <BarChart data={monthlyRevenue}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} tickFormatter={(v) => `₹${v / 100000}L`} />
+              <Tooltip formatter={(v) => inr(v)} contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }} />
+              <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#10B981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <SectionTitle title="Department Performance" />
+          <ResponsiveContainer width="100%" height={190}>
+            <PieChart><Pie data={deptPerformance} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={3}>{deptPerformance.map((d, i) => <Cell key={i} fill={d.color} />)}</Pie><Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }} /></PieChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mt-2">
+            {deptPerformance.map((d) => <div key={d.name} className="flex items-center gap-1.5 text-[11px] text-slate-500"><span className="w-2 h-2 rounded-full" style={{ background: d.color }} />{d.name}<span className="text-slate-400 ml-auto">{d.value}%</span></div>)}
+          </div>
+        </GlassCard>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        <GlassCard className="p-5">
+          <SectionTitle title="Recent Patients" action={<button onClick={() => setPage("patients")} className="text-xs font-semibold text-blue-600 flex items-center gap-1">View all <ChevronRight size={14} /></button>} />
+          <div className="space-y-2.5">{patients.slice(0, 5).map((p) => (
+            <div key={p.uhid} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-blue-50/50 transition">
+              <Avatar name={p.name} /><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700 truncate">{p.name}</p><p className="text-xs text-slate-400">{p.uhid} · {p.dept}</p></div><Badge label={p.status} />
+            </div>
+          ))}</div>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <SectionTitle title="Today's Appointments" action={<button onClick={() => setPage("appointments")} className="text-xs font-semibold text-blue-600 flex items-center gap-1">View all <ChevronRight size={14} /></button>} />
+          <div className="space-y-2.5">{appointments.slice(0, 5).map((a) => (
+            <div key={a.token} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-blue-50/50 transition">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center text-[10px] font-bold leading-none shrink-0"><span>{a.time.split(" ")[0]}</span><span className="text-[8px] text-blue-400">{a.time.split(" ")[1]}</span></div>
+              <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700 truncate">{a.patient}</p><p className="text-xs text-slate-400">{a.doctor}</p></div><Badge label={a.status} />
+            </div>
+          ))}</div>
+        </GlassCard>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        <GlassCard className="p-5">
+          <SectionTitle title="Pending Payments" action={<button onClick={() => setPage("reports")} className="text-xs font-semibold text-blue-600 flex items-center gap-1">Reports <ChevronRight size={14} /></button>} />
+          <div className="overflow-x-auto -mx-2"><table className="w-full"><thead><tr className="border-b border-slate-100"><Th>Invoice</Th><Th>Patient</Th><Th>Amount</Th><Th>Status</Th></tr></thead>
+            <tbody className="divide-y divide-slate-100">{pendingBills.slice(0, 5).map((p) => (
+              <tr key={p.id} className="hover:bg-blue-50/40"><Td className="font-semibold text-slate-700">{p.id}</Td><Td>{p.patient}</Td><Td className="font-semibold">{inr(p.amount)}</Td><Td><Badge label={p.status} /></Td></tr>
+            ))}
+            {pendingBills.length === 0 && <tr><Td className="text-slate-400" colSpan={4}>No pending payments 🎉</Td></tr>}
+            </tbody></table></div>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <SectionTitle title="Notifications" />
+          <div className="space-y-3">{notifications.map((n, i) => (
+            <div key={i} className="flex items-start gap-3"><div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${n.color}`}><n.icon size={16} /></div><p className="text-sm text-slate-700 leading-snug">{n.text}</p></div>
+          ))}</div>
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= PATIENTS ============================= */
+
+const emptyPatientForm = { name: "", age: "", gender: "Female", dob: "", bloodGroup: "O+", mobile: "", email: "", address: "", emergencyContact: "", insurance: "", dept: DEPARTMENTS[0], doctor: "" };
+
+function PatientsPage() {
+  const { patients, addPatient, doctors } = useData();
+  const notify = useToast();
+  const [tab, setTab] = useState("list");
+  const [form, setForm] = useState(emptyPatientForm);
+  const [search, setSearch] = useState("");
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.mobile.trim() || !form.age) { notify("Please fill patient name, age and mobile.", "error"); return; }
+    const doctor = doctors.find((d) => d.dept === form.dept);
+    const rec = addPatient({ ...form, age: Number(form.age), doctor: doctor ? doctor.name : "Unassigned", type: "OP" });
+    notify(`${rec.name} registered with ${rec.uhid}`);
+    setForm(emptyPatientForm);
+    setTab("list");
+  };
+
+  const filtered = patients.filter((p) => (p.name + p.uhid + p.mobile).toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl p-1.5 w-fit">
+        <button onClick={() => setTab("list")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "list" ? "bg-blue-600 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>Patient Directory</button>
+        <button onClick={() => setTab("new")} className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === "new" ? "bg-blue-600 text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>New Registration</button>
+      </div>
+
+      {tab === "list" ? (
+        <GlassCard className="p-5">
+          <SectionTitle eyebrow={`${patients.length} total`} title="All Patients" action={
+            <div className="flex gap-2">
+              <div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className={inputCls + " pl-8 w-48"} /></div>
+              <PrimaryBtn icon={Plus} onClick={() => setTab("new")}>New Patient</PrimaryBtn>
+            </div>
+          } />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              <thead><tr className="border-b border-slate-100"><Th>UHID</Th><Th>Patient</Th><Th>Age/Gender</Th><Th>Mobile</Th><Th>Department</Th><Th>Type</Th><Th>Status</Th></tr></thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((p) => (
+                  <tr key={p.uhid} className="hover:bg-blue-50/40">
+                    <Td className="font-mono text-xs text-slate-500">{p.uhid}</Td>
+                    <Td><div className="flex items-center gap-2.5"><Avatar name={p.name} size={30} /><span className="font-semibold text-slate-700">{p.name}</span></div></Td>
+                    <Td>{p.age} / {p.gender}</Td><Td>{p.mobile}</Td><Td>{p.dept}</Td>
+                    <Td><Badge label={p.type === "IP" ? "Admitted" : "Available"} /></Td>
+                    <Td><Badge label={p.status} /></Td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && <tr><Td colSpan={7} className="text-slate-400 text-center py-8">No patients found.</Td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      ) : (
+        <form onSubmit={submit}>
+          <GlassCard className="p-6">
+            <SectionTitle eyebrow="Front Desk" title="New Patient Registration" />
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
+                <Field label="UHID (auto-generated)"><input readOnly value="Assigned on save" className={inputCls + " bg-slate-50 text-slate-500"} /></Field>
+                <Field label="Patient Name *" icon={UserIcon}><input required value={form.name} onChange={set("name")} placeholder="e.g. Neha Kapoor" className={inputClsIcon} /></Field>
+                <Field label="Age *"><input required type="number" min="0" value={form.age} onChange={set("age")} placeholder="e.g. 29" className={inputCls} /></Field>
+                <Field label="Gender"><select value={form.gender} onChange={set("gender")} className={inputCls}><option>Female</option><option>Male</option><option>Other</option></select></Field>
+                <Field label="Date of Birth"><input type="date" value={form.dob} onChange={set("dob")} className={inputCls} /></Field>
+                <Field label="Blood Group" icon={Droplet}><select value={form.bloodGroup} onChange={set("bloodGroup")} className={inputClsIcon}>{["O+","A+","B+","AB+","O-","A-","B-","AB-"].map((b) => <option key={b}>{b}</option>)}</select></Field>
+                <Field label="Mobile Number *" icon={Phone}><input required value={form.mobile} onChange={set("mobile")} placeholder="9876543210" className={inputClsIcon} /></Field>
+                <Field label="Email Address" icon={Mail}><input type="email" value={form.email} onChange={set("email")} placeholder="patient@email.com" className={inputClsIcon} /></Field>
+                <Field label="Address" icon={MapPin} className="sm:col-span-2"><input value={form.address} onChange={set("address")} placeholder="House no, Street, City, State, PIN" className={inputClsIcon} /></Field>
+                <Field label="Emergency Contact" icon={PhoneCall}><input value={form.emergencyContact} onChange={set("emergencyContact")} placeholder="Name & Mobile" className={inputClsIcon} /></Field>
+                <Field label="Insurance Provider" icon={ShieldCheck}><input value={form.insurance} onChange={set("insurance")} placeholder="e.g. Star Health / None" className={inputClsIcon} /></Field>
+                <Field label="Department"><select value={form.dept} onChange={set("dept")} className={inputCls}>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field>
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-600 mb-1.5 block">Patient Photo</span>
+                <label className="border-2 border-dashed border-slate-200 rounded-2xl h-44 flex flex-col items-center justify-center text-slate-400 gap-2 bg-slate-50/60 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer transition">
+                  <Camera size={24} /><p className="text-xs font-medium">Upload photo</p><p className="text-[10px]">JPG, PNG up to 5MB</p>
+                  <input type="file" accept="image/*" className="hidden" onChange={() => notify("Photo attached (preview only in this demo).", "info")} />
+                </label>
+                <div className="mt-4 p-4 rounded-xl bg-blue-50/60 border border-blue-100 text-xs text-blue-700 leading-relaxed">
+                  <span className="font-semibold flex items-center gap-1.5 mb-1"><ClipboardList size={14} /> Tip</span>
+                  This patient will automatically appear in Appointments, OP Billing and IP Admission dropdowns after saving.
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-5 border-t border-slate-100">
+              <GhostBtn type="button" onClick={() => setForm(emptyPatientForm)}>Reset</GhostBtn>
+              <EmeraldBtn type="submit" icon={CheckCircle2}>Register Patient</EmeraldBtn>
+            </div>
+          </GlassCard>
+        </form>
+      )}
+    </div>
+  );
+}
+
+/* ============================= APPOINTMENTS ============================= */
+
+function AppointmentsPage() {
+  const { appointments, addAppointment, updateAppointmentStatus, patients, doctors } = useData();
+  const notify = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState("10:30");
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ patient: patients[0]?.name || "", doctor: doctors[0]?.name || "", dept: doctors[0]?.dept || "" });
+
+  const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "02:00", "02:30"];
+
+  const bookAppointment = () => {
+    const doc = doctors.find((d) => d.name === form.doctor);
+    addAppointment({ time: `${selectedSlot} AM`, patient: form.patient, doctor: form.doctor, dept: doc?.dept || form.dept });
+    notify(`Appointment booked for ${form.patient} at ${selectedSlot}`);
+    setModalOpen(false);
+  };
+
+  const cycle = (token, current) => {
+    const order = ["Waiting", "In Consultation", "Completed"];
+    const idx = order.indexOf(current);
+    const next = order[Math.min(idx + 1, order.length - 1)];
+    updateAppointmentStatus(token, next);
+  };
+
+  const filtered = appointments.filter((a) => (a.patient + a.doctor + a.token).toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-5">
+      <div className="lg:col-span-2 space-y-5">
+        <GlassCard className="p-5">
+          <SectionTitle eyebrow="Token System" title="Today's Appointments" action={
+            <div className="flex gap-2">
+              <PrimaryBtn icon={Plus} onClick={() => setModalOpen(true)}>New Appointment</PrimaryBtn>
+            </div>
+          } />
+          <div className="relative mb-4"><Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by patient, doctor, token…" className={inputCls + " pl-9"} /></div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead><tr className="border-b border-slate-100"><Th>Token</Th><Th>Time</Th><Th>Patient</Th><Th>Doctor</Th><Th>Department</Th><Th>Status</Th></tr></thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((a) => (
+                  <tr key={a.token} className="hover:bg-blue-50/40">
+                    <Td className="font-mono font-semibold text-blue-600">{a.token}</Td><Td>{a.time}</Td>
+                    <Td className="font-semibold text-slate-700">{a.patient}</Td><Td>{a.doctor}</Td><Td>{a.dept}</Td>
+                    <Td>
+                      {a.status === "Cancelled" ? <Badge label="Cancelled" /> :
+                        <button onClick={() => cycle(a.token, a.status)} title="Click to advance status"><Badge label={a.status} /></button>}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <SectionTitle title="Available Time Slots" />
+          <div className="flex flex-wrap gap-2">
+            {slots.map((s) => (
+              <button key={s} onClick={() => setSelectedSlot(s)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition ${selectedSlot === s ? "bg-blue-600 border-blue-600 text-white shadow" : "bg-white border-slate-200 text-slate-600 hover:border-blue-300"}`}>{s}</button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-3">Selected slot <span className="font-semibold text-blue-600">{selectedSlot}</span> will be used for the next booking.</p>
+        </GlassCard>
+      </div>
+
+      <div className="space-y-5">
+        <GlassCard className="p-5">
+          <SectionTitle title="Doctor Availability" />
+          <div className="space-y-3">{doctors.map((d) => (
+            <div key={d.id} className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-full ${d.color} text-white flex items-center justify-center text-[11px] font-bold`}>{d.name.split(" ")[1]?.[0]}{d.name.split(" ")[2]?.[0]}</div>
+              <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700 truncate">{d.name}</p><p className="text-[11px] text-slate-400">{d.dept}</p></div>
+              <Badge label={d.avail} />
+            </div>
+          ))}</div>
+        </GlassCard>
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Book New Appointment">
+        <div className="space-y-4">
+          <Field label="Patient"><select value={form.patient} onChange={(e) => setForm((f) => ({ ...f, patient: e.target.value }))} className={inputCls}>{patients.map((p) => <option key={p.uhid}>{p.name}</option>)}</select></Field>
+          <Field label="Doctor"><select value={form.doctor} onChange={(e) => setForm((f) => ({ ...f, doctor: e.target.value }))} className={inputCls}>{doctors.map((d) => <option key={d.id}>{d.name} — {d.dept}</option>)}</select></Field>
+          <Field label="Time Slot"><div className="grid grid-cols-4 gap-2">{slots.slice(0, 8).map((s) => (
+            <button key={s} type="button" onClick={() => setSelectedSlot(s)} className={`px-2 py-2 rounded-lg text-xs font-semibold border ${selectedSlot === s ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 text-slate-600"}`}>{s}</button>
+          ))}</div></Field>
+          <PrimaryBtn className="w-full justify-center" onClick={bookAppointment}>Confirm Booking</PrimaryBtn>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+/* ============================= OP BILLING ============================= */
+
+function OPBillingPage() {
+  const { patients, doctors, recordBill, settings } = useData();
+  const notify = useToast();
+  const [patientName, setPatientName] = useState(patients[0]?.name || "");
+  const [doctorName, setDoctorName] = useState(doctors[0]?.name || "");
+  const [items, setItems] = useState([
+    { name: "Registration Fee", amount: 100 },
+  ]);
+  const [newItem, setNewItem] = useState({ name: "", amount: "" });
+  const [discount, setDiscount] = useState(50);
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+
+  const doctor = doctors.find((d) => d.name === doctorName);
+  useEffect(() => {
+    setItems((list) => {
+      const withoutFee = list.filter((i) => i.name !== "Consultation Fee");
+      return [{ name: "Consultation Fee", amount: doctor?.fee || 0 }, ...withoutFee];
+    });
+  }, [doctorName]);
+
+  const subtotal = items.reduce((s, i) => s + Number(i.amount || 0), 0);
+  const gst = Math.round((subtotal - discount) * (settings.gstRate / 100));
+  const total = subtotal - discount + gst;
+
+  const addItem = () => {
+    if (!newItem.name.trim() || !newItem.amount) { notify("Enter item name and amount.", "error"); return; }
+    setItems((l) => [...l, { name: newItem.name, amount: Number(newItem.amount) }]);
+    setNewItem({ name: "", amount: "" });
+  };
+  const removeItem = (idx) => setItems((l) => l.filter((_, i) => i !== idx));
+
+  const patient = patients.find((p) => p.name === patientName);
+
+  const generate = () => {
+    const bill = recordBill({ type: "OP", patient: patientName, mobile: patient?.mobile || "", doctor: doctorName, items, subtotal, discount, gst, amount: total, mode: paymentMethod });
+    notify(`Bill ${bill.id} generated for ${inr(total)}`);
+    printDocument(`Invoice ${bill.id}`, `
+      <div class="header"><div><div class="brand">${settings.hospitalName}</div><div class="muted">${settings.address}</div><div class="muted">GSTIN: ${settings.gstin}</div></div>
+      <div style="text-align:right"><div class="muted">Invoice No.</div><div style="font-weight:700">${bill.id}</div><div class="muted" style="margin-top:6px">${fmtDate(new Date())}</div></div></div>
+      <p><b>Patient:</b> ${patientName} &nbsp; <b>Doctor:</b> ${doctorName}</p>
+      <table><thead><tr><th>Item</th><th class="right">Amount</th></tr></thead><tbody>
+      ${items.map((i) => `<tr><td>${i.name}</td><td class="right">${inr(i.amount)}</td></tr>`).join("")}
+      <tr><td>Discount</td><td class="right">- ${inr(discount)}</td></tr>
+      <tr><td>GST (${settings.gstRate}%)</td><td class="right">${inr(gst)}</td></tr>
+      <tr class="total-row"><td>Total Payable</td><td class="right">${inr(total)}</td></tr>
+      </tbody></table><p class="muted">Payment Method: ${paymentMethod}</p>
+    `);
+  };
+
+  const sendWhatsapp = () => {
+    if (!patient?.mobile) { notify("No mobile number on file for this patient.", "error"); return; }
+    const msg = `${settings.hospitalName}\nBill for ${patientName}\nTotal: ${inr(total)}\nPayment: ${paymentMethod}\nThank you for visiting us!`;
+    window.open(waLink(patient.mobile, msg), "_blank");
+  };
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-5">
+      <GlassCard className="p-6 lg:col-span-2">
+        <SectionTitle eyebrow="OPD" title="Outpatient Billing" />
+        <div className="grid sm:grid-cols-2 gap-4 mb-5">
+          <Field label="Patient"><select value={patientName} onChange={(e) => setPatientName(e.target.value)} className={inputCls}>{patients.map((p) => <option key={p.uhid}>{p.name}</option>)}</select></Field>
+          <Field label="Consulting Doctor"><select value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={inputCls}>{doctors.map((d) => <option key={d.id}>{d.name}</option>)}</select></Field>
+        </div>
+
+        <div className="rounded-xl border border-slate-100 overflow-hidden mb-4">
+          <table className="w-full">
+            <thead className="bg-slate-50/70"><tr><Th>Item</Th><Th className="text-right">Amount</Th><Th className="w-10"></Th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {items.map((i, idx) => (
+                <tr key={idx}><Td className="font-semibold">{i.name}</Td><Td className="text-right font-semibold">{inr(i.amount)}</Td>
+                  <Td><button onClick={() => removeItem(idx)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button></Td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex gap-2 mb-5">
+          <input value={newItem.name} onChange={(e) => setNewItem((n) => ({ ...n, name: e.target.value }))} placeholder="Add item (e.g. Lab Test, Medicine)" className={inputCls} />
+          <input value={newItem.amount} onChange={(e) => setNewItem((n) => ({ ...n, amount: e.target.value }))} type="number" placeholder="₹" className={inputCls + " w-28"} />
+          <GhostBtn icon={Plus} onClick={addItem}>Add</GhostBtn>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Discount (₹)"><input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} className={inputCls} /></Field>
+          <Field label="Payment Method"><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputCls}><option>Cash</option><option>UPI</option><option>Credit / Debit Card</option><option>Insurance</option><option>Net Banking</option></select></Field>
+        </div>
+      </GlassCard>
+
+      <div className="space-y-5">
+        <GlassCard className="p-6">
+          <SectionTitle title="Bill Summary" />
+          <div className="space-y-2.5 text-sm">
+            <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-700">{inr(subtotal)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>Discount</span><span className="font-semibold text-rose-500">- {inr(discount)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>GST ({settings.gstRate}%)</span><span className="font-semibold text-slate-700">{inr(gst)}</span></div>
+            <div className="h-px bg-slate-100 my-2" />
+            <div className="flex justify-between text-base"><span className="font-bold text-slate-800">Total Payable</span><span className="font-extrabold text-blue-600">{inr(total)}</span></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-6">
+            <EmeraldBtn icon={Printer} className="justify-center" onClick={generate}>Generate & Print</EmeraldBtn>
+            <PrimaryBtn icon={MessageCircle} className="justify-center" onClick={sendWhatsapp}>WhatsApp Bill</PrimaryBtn>
+          </div>
+        </GlassCard>
+        {settings.showQr && (
+          <GlassCard className="p-5 bg-gradient-to-br from-blue-600 to-blue-500 text-white border-none">
+            <div className="flex items-center gap-2 mb-1"><QrCode size={18} /><p className="text-sm font-semibold">Scan to pay via UPI</p></div>
+            <p className="text-xs text-white/70">Patient can scan the QR on the printed receipt to pay instantly.</p>
+          </GlassCard>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================= IP ADMISSION ============================= */
+
+function IPAdmissionPage() {
+  const { patients, doctors, rooms, admitPatient } = useData();
+  const notify = useToast();
+  const vacantRooms = rooms.filter((r) => r.status === "Vacant");
+  const [patientName, setPatientName] = useState(patients[0]?.name || "");
+  const [doctorName, setDoctorName] = useState(doctors[0]?.name || "");
+  const [roomNo, setRoomNo] = useState(vacantRooms[0]?.no || "");
+  const [advance, setAdvance] = useState(15000);
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [attender, setAttender] = useState({ name: "", relation: "", contact: "" });
+
+  const submit = () => {
+    if (!roomNo) { notify("No vacant rooms available to admit.", "error"); return; }
+    const patient = patients.find((p) => p.name === patientName);
+    admitPatient(roomNo, patient || { name: patientName, age: 0, gender: "-", mobile: "", dept: "General Medicine" });
+    notify(`${patientName} admitted to room ${roomNo}. Advance ${inr(advance)} recorded.`);
+    setAttender({ name: "", relation: "", contact: "" });
+  };
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-5">
+      <GlassCard className="p-6 lg:col-span-2">
+        <SectionTitle eyebrow="Inpatient" title="IP Admission Form" />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Patient"><select value={patientName} onChange={(e) => setPatientName(e.target.value)} className={inputCls}>{patients.map((p) => <option key={p.uhid}>{p.name}</option>)}</select></Field>
+          <Field label="Admitting Doctor"><select value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={inputCls}>{doctors.map((d) => <option key={d.id}>{d.name}</option>)}</select></Field>
+          <Field label="Admission Date"><input type="date" defaultValue={todayISO()} className={inputCls} /></Field>
+          <Field label="Admission Time"><input type="time" defaultValue="14:30" className={inputCls} /></Field>
+          <Field label="Room / Bed No."><select value={roomNo} onChange={(e) => setRoomNo(e.target.value)} className={inputCls}>{vacantRooms.length ? vacantRooms.map((r) => <option key={r.no} value={r.no}>{r.no} — {r.type}</option>) : <option value="">No rooms vacant</option>}</select></Field>
+          <Field label="Advance Payment (₹)" icon={IndianRupeeIcon}><input type="number" value={advance} onChange={(e) => setAdvance(Number(e.target.value) || 0)} className={inputClsIcon} /></Field>
+          <Field label="Payment Method"><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={inputCls}><option>Cash</option><option>UPI</option><option>Card</option><option>Insurance</option></select></Field>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <h3 className="text-sm font-bold text-slate-700 mb-3">Attender Details</h3>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <Field label="Attender Name"><input value={attender.name} onChange={(e) => setAttender((a) => ({ ...a, name: e.target.value }))} placeholder="e.g. Meena Iyer" className={inputCls} /></Field>
+            <Field label="Relation"><input value={attender.relation} onChange={(e) => setAttender((a) => ({ ...a, relation: e.target.value }))} placeholder="e.g. Spouse" className={inputCls} /></Field>
+            <Field label="Contact Number" icon={Phone}><input value={attender.contact} onChange={(e) => setAttender((a) => ({ ...a, contact: e.target.value }))} placeholder="9876543210" className={inputClsIcon} /></Field>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6 pt-5 border-t border-slate-100">
+          <EmeraldBtn icon={BedDouble} onClick={submit} disabled={!roomNo}>Confirm Admission</EmeraldBtn>
+        </div>
+      </GlassCard>
+
+      <div className="space-y-5">
+        <GlassCard className="p-5">
+          <SectionTitle title="Bed Management" />
+          <div className="grid grid-cols-2 gap-2.5">
+            {rooms.map((r) => (
+              <div key={r.no} className={`rounded-xl p-3 border ${r.status === "Vacant" ? "border-emerald-200 bg-emerald-50/50" : r.status === "Cleaning" ? "border-amber-200 bg-amber-50/50" : "border-rose-200 bg-rose-50/50"}`}>
+                <div className="flex items-center justify-between mb-1"><span className="text-xs font-bold text-slate-700">{r.no}</span><Bed size={13} className="text-slate-400" /></div>
+                <p className="text-[10px] text-slate-500 mb-1.5">{r.type}</p>
+                <Badge label={r.status} />
+                {r.patient && <p className="text-[10px] text-slate-500 mt-1.5 truncate">{r.patient}</p>}
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+        <GlassCard className="p-5 bg-gradient-to-br from-emerald-600 to-emerald-500 text-white border-none">
+          <p className="text-2xl font-extrabold font-display">{vacantRooms.length} / {rooms.length}</p>
+          <p className="text-xs text-white/80 mt-1">Beds currently vacant across all wards</p>
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= IP BILLING ============================= */
+
+function IPBillingPage() {
+  const { patients, rooms, recordBill, dischargePatient, settings } = useData();
+  const notify = useToast();
+  const occupied = rooms.filter((r) => r.status === "Occupied");
+  const [roomNo, setRoomNo] = useState(occupied[0]?.no || "");
+  const room = rooms.find((r) => r.no === roomNo);
+  const patient = patients.find((p) => p.name === room?.patient);
+
+  const [items, setItems] = useState([
+    { label: "Room Charges", desc: "3 days stay", amt: 9000 },
+    { label: "Doctor Charges", desc: "Daily visits", amt: 6000 },
+    { label: "Lab Charges", desc: "Investigations", amt: 12500 },
+    { label: "Pharmacy", desc: "IP medicine supply", amt: 4800 },
+    { label: "OT Charges", desc: "Procedure (if any)", amt: 0 },
+    { label: "Nursing Charges", desc: "Round-the-clock care", amt: 3600 },
+  ]);
+  const [discount, setDiscount] = useState(2000);
+  const [insurance, setInsurance] = useState(15000);
+  const [insurer, setInsurer] = useState("Star Health");
+
+  const updateAmt = (idx, val) => setItems((l) => l.map((it, i) => (i === idx ? { ...it, amt: Number(val) || 0 } : it)));
+
+  const subtotal = items.reduce((s, i) => s + i.amt, 0);
+  const gst = Math.round((subtotal - discount) * (settings.gstRate / 100));
+  const total = Math.max(0, subtotal - discount + gst - insurance);
+
+  const finalize = () => {
+    if (!room) { notify("Select an occupied room first.", "error"); return; }
+    const bill = recordBill({ type: "IP", patient: room.patient, mobile: patient?.mobile || "", items, subtotal, discount, gst, insurance, amount: total, mode: insurer ? "Insurance + Cash" : "Cash" });
+    dischargePatient(roomNo);
+    notify(`${room.patient} discharged. Final bill ${bill.id} — ${inr(total)}`);
+    printDocument(`Invoice ${bill.id}`, `
+      <div class="header"><div><div class="brand">${settings.hospitalName}</div><div class="muted">${settings.address}</div></div>
+      <div style="text-align:right"><div class="muted">Invoice No.</div><div style="font-weight:700">${bill.id}</div></div></div>
+      <p><b>Patient:</b> ${room.patient} &nbsp; <b>Room:</b> ${roomNo}</p>
+      <table><thead><tr><th>Charge Head</th><th>Description</th><th class="right">Amount</th></tr></thead><tbody>
+      ${items.map((i) => `<tr><td>${i.label}</td><td>${i.desc}</td><td class="right">${inr(i.amt)}</td></tr>`).join("")}
+      <tr><td colspan="2">Discount</td><td class="right">- ${inr(discount)}</td></tr>
+      <tr><td colspan="2">GST</td><td class="right">${inr(gst)}</td></tr>
+      <tr><td colspan="2">Insurance Covered</td><td class="right">- ${inr(insurance)}</td></tr>
+      <tr class="total-row"><td colspan="2">Payable by Patient</td><td class="right">${inr(total)}</td></tr>
+      </tbody></table>
+    `);
+  };
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-5">
+      <GlassCard className="p-6 lg:col-span-2">
+        <SectionTitle eyebrow="IPD" title="Inpatient Final Billing" action={
+          <Field label=""><select value={roomNo} onChange={(e) => setRoomNo(e.target.value)} className={inputCls}>{occupied.length ? occupied.map((r) => <option key={r.no} value={r.no}>{r.no} — {r.patient}</option>) : <option value="">No admitted patients</option>}</select></Field>
+        } />
+        {room ? (
+          <>
+            <div className="rounded-xl border border-slate-100 overflow-hidden mb-5">
+              <table className="w-full">
+                <thead className="bg-slate-50/70"><tr><Th>Charge Head</Th><Th>Description</Th><Th className="text-right">Amount</Th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.map((i, idx) => (
+                    <tr key={i.label}><Td className="font-semibold">{i.label}</Td><Td>{i.desc}</Td>
+                      <Td className="text-right"><input type="number" value={i.amt} onChange={(e) => updateAmt(idx, e.target.value)} className="w-28 text-right rounded-lg border border-slate-200 px-2 py-1 text-sm" /></Td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="Discount (₹)"><input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} className={inputCls} /></Field>
+              <Field label="Insurance Coverage (₹)"><input type="number" value={insurance} onChange={(e) => setInsurance(Number(e.target.value) || 0)} className={inputCls} /></Field>
+              <Field label="Insurance Provider"><input value={insurer} onChange={(e) => setInsurer(e.target.value)} className={inputCls} /></Field>
+            </div>
+          </>
+        ) : <p className="text-slate-400 text-sm py-10 text-center">No admitted patients right now. Admit a patient from IP Admission first.</p>}
+      </GlassCard>
+
+      <div className="space-y-5">
+        <GlassCard className="p-6">
+          <SectionTitle title="Grand Total" />
+          <div className="space-y-2.5 text-sm">
+            <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-700">{inr(subtotal)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>Discount</span><span className="font-semibold text-rose-500">- {inr(discount)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>GST ({settings.gstRate}%)</span><span className="font-semibold text-slate-700">{inr(gst)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>Insurance Covered</span><span className="font-semibold text-emerald-600">- {inr(insurance)}</span></div>
+            <div className="h-px bg-slate-100 my-2" />
+            <div className="flex justify-between text-base"><span className="font-bold text-slate-800">Payable by Patient</span><span className="font-extrabold text-blue-600">{inr(total)}</span></div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 mt-6">
+            <EmeraldBtn icon={FileCheck2} className="justify-center" onClick={finalize} disabled={!room}>Finalize & Discharge</EmeraldBtn>
+          </div>
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
+/* ============================= DOCTORS ============================= */
+
+const emptyDoctorForm = { name: "", dept: DEPARTMENTS[0], qual: "", fee: "", exp: "", days: "Mon–Sat", time: "" };
+
+function DoctorsPage() {
+  const { doctors, addDoctor, updateDoctor, deleteDoctor } = useData();
+  const notify = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState(emptyDoctorForm);
+
+  const submit = () => {
+    if (!form.name.trim() || !form.fee) { notify("Enter doctor name and fee.", "error"); return; }
+    addDoctor({ ...form, fee: Number(form.fee), color: ["bg-blue-500","bg-emerald-500","bg-amber-500","bg-violet-500","bg-pink-500","bg-cyan-500"][doctors.length % 6] });
+    notify(`${form.name} added to the roster.`);
+    setForm(emptyDoctorForm);
+    setModalOpen(false);
+  };
+
+  const cycleAvail = (d) => {
+    const order = ["Available", "Busy", "On Leave"];
+    const next = order[(order.indexOf(d.avail) + 1) % order.length];
+    updateDoctor(d.id, { avail: next });
+  };
+
+  const remove = (d) => { if (window.confirm(`Remove ${d.name}?`)) { deleteDoctor(d.id); notify(`${d.name} removed.`, "info"); } };
+
+  return (
+    <GlassCard className="p-5">
+      <SectionTitle eyebrow={`${doctors.length} specialists`} title="Doctor Management" action={<PrimaryBtn icon={Plus} onClick={() => setModalOpen(true)}>Add Doctor</PrimaryBtn>} />
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {doctors.map((d) => (
+          <div key={d.id} className="rounded-2xl border border-slate-100 p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all bg-white/60 relative group">
+            <button onClick={() => remove(d)} className="absolute top-3 right-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition"><Trash2 size={15} /></button>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-12 h-12 rounded-xl ${d.color} text-white flex items-center justify-center font-bold text-sm`}>{d.name.split(" ")[1]?.[0]}{d.name.split(" ")[2]?.[0]}</div>
+              <div className="min-w-0"><p className="text-sm font-bold text-slate-800 truncate">{d.name}</p><p className="text-[11px] text-slate-400">{d.dept}</p></div>
+            </div>
+            <div className="space-y-1.5 text-xs text-slate-500 mb-3">
+              <div className="flex justify-between"><span>Qualification</span><span className="font-semibold text-slate-700">{d.qual || "—"}</span></div>
+              <div className="flex justify-between"><span>Experience</span><span className="font-semibold text-slate-700">{d.exp || "—"}</span></div>
+              <div className="flex justify-between"><span>Fee</span><span className="font-semibold text-slate-700">{inr(d.fee)}</span></div>
+              <div className="flex justify-between"><span>Schedule</span><span className="font-semibold text-slate-700">{d.days}</span></div>
+              <div className="flex justify-between"><span>Timing</span><span className="font-semibold text-slate-700">{d.time || "—"}</span></div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 text-amber-500 text-xs font-semibold"><Star size={13} /> {d.rating}</div>
+              <button onClick={() => cycleAvail(d)} title="Click to change availability"><Badge label={d.avail} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add New Doctor" wide>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Full Name"><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Dr. Neha Kapoor" className={inputCls} /></Field>
+          <Field label="Department"><select value={form.dept} onChange={(e) => setForm((f) => ({ ...f, dept: e.target.value }))} className={inputCls}>{DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}</select></Field>
+          <Field label="Qualification"><input value={form.qual} onChange={(e) => setForm((f) => ({ ...f, qual: e.target.value }))} placeholder="MD, DM" className={inputCls} /></Field>
+          <Field label="Consultation Fee (₹)"><input type="number" value={form.fee} onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))} placeholder="600" className={inputCls} /></Field>
+          <Field label="Experience"><input value={form.exp} onChange={(e) => setForm((f) => ({ ...f, exp: e.target.value }))} placeholder="10 yrs" className={inputCls} /></Field>
+          <Field label="Working Days"><input value={form.days} onChange={(e) => setForm((f) => ({ ...f, days: e.target.value }))} placeholder="Mon–Sat" className={inputCls} /></Field>
+          <Field label="Timing" className="sm:col-span-2"><input value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} placeholder="10:00 AM – 4:00 PM" className={inputCls} /></Field>
+        </div>
+        <div className="flex justify-end gap-3 mt-6"><GhostBtn onClick={() => setModalOpen(false)}>Cancel</GhostBtn><EmeraldBtn icon={CheckCircle2} onClick={submit}>Save Doctor</EmeraldBtn></div>
+      </Modal>
+    </GlassCard>
+  );
+}
+
+/* ============================= PHARMACY ============================= */
+
+const emptyMedForm = { name: "", batch: "", stock: "", reorder: "50", expiry: "", gst: "12", supplier: "", price: "" };
+
+function PharmacyPage() {
+  const { medicines, addMedicine, deleteMedicine, deductStock, recordBill, settings } = useData();
+  const notify = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState(emptyMedForm);
+
+  const [patientName, setPatientName] = useState("");
+  const [cart, setCart] = useState([]);
+  const [selMed, setSelMed] = useState(medicines[0]?.id || "");
+  const [qty, setQty] = useState(1);
+  const [payMethod, setPayMethod] = useState("Cash");
+
+  const addMedSubmit = () => {
+    if (!form.name.trim() || !form.price) { notify("Enter medicine name and price.", "error"); return; }
+    addMedicine({ ...form, stock: Number(form.stock) || 0, reorder: Number(form.reorder) || 50, price: Number(form.price), gst: Number(form.gst) });
+    notify(`${form.name} added to inventory.`);
+    setForm(emptyMedForm);
+    setModalOpen(false);
+  };
+  const removeMed = (m) => { if (window.confirm(`Remove ${m.name} from inventory?`)) { deleteMedicine(m.id); notify("Medicine removed.", "info"); } };
+
+  const scanBarcode = () => {
+    const code = window.prompt("Simulated barcode scan — enter batch number:");
+    if (!code) return;
+    const found = medicines.find((m) => m.batch.toLowerCase() === code.toLowerCase());
+    if (found) { setSelMed(found.id); notify(`Scanned: ${found.name}`); } else notify("No medicine found for that batch.", "error");
+  };
+
+  const addToCart = () => {
+    const med = medicines.find((m) => m.id === Number(selMed));
+    if (!med) return;
+    if (qty > med.stock) { notify(`Only ${med.stock} units of ${med.name} in stock.`, "error"); return; }
+    setCart((c) => {
+      const existing = c.find((i) => i.id === med.id);
+      if (existing) return c.map((i) => (i.id === med.id ? { ...i, qty: i.qty + Number(qty) } : i));
+      return [...c, { id: med.id, name: med.name, price: med.price, gst: med.gst, qty: Number(qty) }];
+    });
+    setQty(1);
+  };
+  const removeFromCart = (id) => setCart((c) => c.filter((i) => i.id !== id));
+
+  const cartSubtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const cartGst = Math.round(cart.reduce((s, i) => s + i.price * i.qty * (i.gst / 100), 0));
+  const cartTotal = cartSubtotal + cartGst;
+
+  const generateBill = () => {
+    if (cart.length === 0) { notify("Add at least one item to the bill.", "error"); return; }
+    cart.forEach((i) => deductStock(i.id, i.qty));
+    const bill = recordBill({ type: "Pharmacy", patient: patientName || "Walk-in Customer", items: cart, amount: cartTotal, mode: payMethod });
+    notify(`Pharmacy bill ${bill.id} generated for ${inr(cartTotal)}`);
+    printDocument(`Invoice ${bill.id}`, `
+      <div class="header"><div><div class="brand">${settings.hospitalName} — Pharmacy</div></div><div style="text-align:right"><div class="muted">Invoice</div><div style="font-weight:700">${bill.id}</div></div></div>
+      <p><b>Patient:</b> ${patientName || "Walk-in Customer"}</p>
+      <table><thead><tr><th>Medicine</th><th>Qty</th><th class="right">Amount</th></tr></thead><tbody>
+      ${cart.map((i) => `<tr><td>${i.name}</td><td>${i.qty}</td><td class="right">${inr(i.price * i.qty)}</td></tr>`).join("")}
+      <tr class="total-row"><td colspan="2">Total (incl. GST)</td><td class="right">${inr(cartTotal)}</td></tr>
+      </tbody></table>
+    `);
+    setCart([]); setPatientName("");
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="grid sm:grid-cols-3 gap-4">
+        <StatCard icon={PackageSearch} label="Total SKUs" value={String(medicines.length)} tint="bg-blue-500" />
+        <StatCard icon={AlertTriangle} label="Low Stock Items" value={String(medicines.filter((m) => m.status === "Low Stock").length)} delta="Reorder soon" positive={false} tint="bg-amber-500" />
+        <StatCard icon={PackagePlus} label="Critical Stock" value={String(medicines.filter((m) => m.status === "Critical").length)} delta="Reorder now" positive={false} tint="bg-rose-500" />
+      </div>
+
+      <GlassCard className="p-5">
+        <SectionTitle eyebrow="Inventory" title="Medicine Stock" action={
+          <div className="flex gap-2"><GhostBtn icon={ScanLine} onClick={scanBarcode}>Scan Barcode</GhostBtn><PrimaryBtn icon={Plus} onClick={() => setModalOpen(true)}>Add Medicine</PrimaryBtn></div>
+        } />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px]">
+            <thead><tr className="border-b border-slate-100"><Th>Medicine</Th><Th>Batch</Th><Th>Stock</Th><Th>Expiry</Th><Th>GST</Th><Th>Supplier</Th><Th>Price/Unit</Th><Th>Status</Th><Th></Th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {medicines.map((m) => (
+                <tr key={m.id} className="hover:bg-blue-50/40">
+                  <Td className="font-semibold text-slate-700 flex items-center gap-2"><Barcode size={14} className="text-slate-300" />{m.name}</Td>
+                  <Td className="font-mono text-xs">{m.batch}</Td><Td>{m.stock} <span className="text-slate-400">/ {m.reorder}</span></Td>
+                  <Td>{m.expiry}</Td><Td>{m.gst}%</Td><Td>{m.supplier}</Td><Td>₹{m.price}</Td><Td><Badge label={m.status} /></Td>
+                  <Td><button onClick={() => removeMed(m)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button></Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+
+      <GlassCard className="p-6">
+        <SectionTitle eyebrow="Counter" title="Quick Pharmacy Bill" />
+        <div className="grid sm:grid-cols-4 gap-4">
+          <Field label="Patient / Walk-in"><input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Patient name or UHID" className={inputCls} /></Field>
+          <Field label="Medicine"><select value={selMed} onChange={(e) => setSelMed(e.target.value)} className={inputCls}>{medicines.map((m) => <option key={m.id} value={m.id}>{m.name} (stock {m.stock})</option>)}</select></Field>
+          <Field label="Quantity"><input type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} className={inputCls} /></Field>
+          <Field label="Payment Method"><select value={payMethod} onChange={(e) => setPayMethod(e.target.value)} className={inputCls}><option>Cash</option><option>UPI</option><option>Card</option></select></Field>
+        </div>
+        {cart.length > 0 && (
+          <div className="mt-4 rounded-xl border border-slate-100 overflow-hidden">
+            <table className="w-full"><thead className="bg-slate-50/70"><tr><Th>Item</Th><Th>Qty</Th><Th className="text-right">Amount</Th><Th></Th></tr></thead>
+              <tbody className="divide-y divide-slate-100">{cart.map((i) => (
+                <tr key={i.id}><Td>{i.name}</Td><Td>{i.qty}</Td><Td className="text-right">{inr(i.price * i.qty)}</Td>
+                  <Td><button onClick={() => removeFromCart(i.id)} className="text-slate-300 hover:text-rose-500"><Trash2 size={15} /></button></Td></tr>
+              ))}</tbody></table>
+          </div>
+        )}
+        <div className="flex justify-between items-center mt-5">
+          <p className="text-sm text-slate-500">Total: <span className="font-bold text-slate-800">{inr(cartTotal)}</span> {cart.length > 0 && <span className="text-xs">(incl. GST {inr(cartGst)})</span>}</p>
+          <div className="flex gap-3">
+            <GhostBtn icon={Plus} onClick={addToCart}>Add Item</GhostBtn>
+            <EmeraldBtn icon={Receipt} onClick={generateBill}>Generate Bill</EmeraldBtn>
+          </div>
+        </div>
+      </GlassCard>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add New Medicine" wide>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Medicine Name"><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Ibuprofen 400mg" className={inputCls} /></Field>
+          <Field label="Batch No."><input value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} placeholder="IBU4471" className={inputCls} /></Field>
+          <Field label="Opening Stock"><input type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} placeholder="100" className={inputCls} /></Field>
+          <Field label="Reorder Level"><input type="number" value={form.reorder} onChange={(e) => setForm((f) => ({ ...f, reorder: e.target.value }))} className={inputCls} /></Field>
+          <Field label="Expiry (MM/YYYY)"><input value={form.expiry} onChange={(e) => setForm((f) => ({ ...f, expiry: e.target.value }))} placeholder="12/2027" className={inputCls} /></Field>
+          <Field label="GST %"><select value={form.gst} onChange={(e) => setForm((f) => ({ ...f, gst: e.target.value }))} className={inputCls}><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option></select></Field>
+          <Field label="Supplier"><input value={form.supplier} onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))} placeholder="e.g. Cipla Ltd" className={inputCls} /></Field>
+          <Field label="Price per Unit (₹)"><input type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} placeholder="4.5" className={inputCls} /></Field>
+        </div>
+        <div className="flex justify-end gap-3 mt-6"><GhostBtn onClick={() => setModalOpen(false)}>Cancel</GhostBtn><EmeraldBtn icon={CheckCircle2} onClick={addMedSubmit}>Save Medicine</EmeraldBtn></div>
+      </Modal>
+    </div>
+  );
+}
+
+/* ============================= LABORATORY ============================= */
+
+function LabPage() {
+  const { labTests, addLabTest, cycleLabStatus, patients, settings } = useData();
+  const notify = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState({ patient: patients[0]?.name || "", test: "" });
+
+  const submit = () => {
+    if (!form.test.trim()) { notify("Enter the test name.", "error"); return; }
+    addLabTest(form);
+    notify(`Test order created for ${form.patient}`);
+    setForm({ patient: patients[0]?.name || "", test: "" });
+    setModalOpen(false);
+  };
+
+  const printReport = (t) => {
+    printDocument(`Lab Report ${t.id}`, `
+      <div class="header"><div><div class="brand">${settings.hospitalName} — Laboratory</div></div><div style="text-align:right"><div class="muted">Report ID</div><div style="font-weight:700">${t.id}</div></div></div>
+      <p><b>Patient:</b> ${t.patient}</p><p><b>Test:</b> ${t.test}</p><p><b>Sample Collected:</b> ${t.collected}</p><p><b>Technician:</b> ${t.tech}</p>
+      <p class="muted" style="margin-top:20px">Report status: ${t.status}. Detailed results to be reviewed by the consulting physician.</p>
+    `);
+  };
+
+  return (
+    <div className="space-y-5">
+      <GlassCard className="p-5">
+        <SectionTitle eyebrow="Diagnostics" title="Sample & Report Tracking" action={<PrimaryBtn icon={Plus} onClick={() => setModalOpen(true)}>New Test Order</PrimaryBtn>} />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead><tr className="border-b border-slate-100"><Th>Lab ID</Th><Th>Patient</Th><Th>Test</Th><Th>Collected</Th><Th>Technician</Th><Th>Status</Th><Th>Action</Th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {labTests.map((l) => (
+                <tr key={l.id} className="hover:bg-blue-50/40">
+                  <Td className="font-mono text-xs text-slate-500">{l.id}</Td><Td className="font-semibold text-slate-700">{l.patient}</Td><Td>{l.test}</Td><Td>{l.collected}</Td><Td>{l.tech}</Td>
+                  <Td><button onClick={() => cycleLabStatus(l.id)} title="Click to advance status"><Badge label={l.status} /></button></Td>
+                  <Td>{l.status === "Report Ready" ? (<button onClick={() => printReport(l)} className="text-blue-600 text-xs font-semibold flex items-center gap-1"><Printer size={13} /> Print</button>) : (<span className="text-slate-400 text-xs">In queue</span>)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <StatCard icon={FlaskConical} label="Tests Today" value={String(labTests.length)} tint="bg-violet-500" />
+        <StatCard icon={CheckCircle2} label="Reports Ready" value={String(labTests.filter((t) => t.status === "Report Ready").length)} positive tint="bg-emerald-500" />
+        <StatCard icon={Clock} label="Pending Collection" value={String(labTests.filter((t) => t.status === "Pending Collection").length)} positive={false} tint="bg-amber-500" />
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Lab Test Order">
+        <div className="space-y-4">
+          <Field label="Patient"><select value={form.patient} onChange={(e) => setForm((f) => ({ ...f, patient: e.target.value }))} className={inputCls}>{patients.map((p) => <option key={p.uhid}>{p.name}</option>)}</select></Field>
+          <Field label="Test Name"><input value={form.test} onChange={(e) => setForm((f) => ({ ...f, test: e.target.value }))} placeholder="e.g. CBC, Lipid Profile" className={inputCls} /></Field>
+          <PrimaryBtn className="w-full justify-center" onClick={submit}>Create Order</PrimaryBtn>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+/* ============================= REPORTS ============================= */
+
+function ReportsPage() {
+  const { bills, patients, doctors } = useData();
+  const notify = useToast();
+
+  const byMode = useMemo(() => {
+    const modes = ["Cash", "UPI", "Card", "Credit / Debit Card", "Insurance", "Insurance + Cash", "Net Banking"];
+    const rows = {};
+    bills.forEach((b) => {
+      const mode = b.mode || "Cash";
+      rows[mode] = rows[mode] || { OP: 0, IP: 0, Pharmacy: 0 };
+      rows[mode][b.type] = (rows[mode][b.type] || 0) + Number(b.amount);
+    });
+    return rows;
+  }, [bills]);
+
+  const reports = [
+    { name: "Daily Collection Report", desc: "Payment-mode breakup of today's bills", icon: IndianRupeeIcon, action: () => exportDaily("pdf") },
+    { name: "Monthly Revenue Report", desc: "All recorded bills exported as CSV", icon: TrendingUp, action: () => exportBillsCsv() },
+    { name: "Doctor-wise Collection", desc: "OP revenue grouped by consulting doctor", icon: Stethoscope, action: () => exportDoctorCsv() },
+    { name: "Patient Visit History", desc: "Full patient directory with status", icon: ClipboardList, action: () => exportPatientsCsv() },
+  ];
+
+  function exportDaily(kind) {
+    const rows = Object.entries(byMode).map(([mode, v]) => [mode, v.OP || 0, v.IP || 0, v.Pharmacy || 0, (v.OP || 0) + (v.IP || 0) + (v.Pharmacy || 0)]);
+    if (kind === "pdf") {
+      printDocument("Daily Collection Report", `
+        <h2>Daily Collection Summary</h2><p class="muted">${fmtDate(new Date())}</p>
+        <table><thead><tr><th>Mode</th><th class="right">OP</th><th class="right">IP</th><th class="right">Pharmacy</th><th class="right">Total</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr><td>${r[0]}</td><td class="right">${inr(r[1])}</td><td class="right">${inr(r[2])}</td><td class="right">${inr(r[3])}</td><td class="right">${inr(r[4])}</td></tr>`).join("")}</tbody></table>
+      `);
+    } else {
+      csvDownload("daily-collection.csv", [["Mode", "OP", "IP", "Pharmacy", "Total"], ...rows]);
+    }
+    notify("Report generated.");
+  }
+  function exportBillsCsv() {
+    csvDownload("all-bills.csv", [["Invoice", "Type", "Patient", "Amount", "Mode", "Date", "Status"], ...bills.map((b) => [b.id, b.type, b.patient, b.amount, b.mode, b.date, b.status])]);
+    notify("Excel (CSV) exported.");
+  }
+  function exportDoctorCsv() {
+    const rows = doctors.map((d) => {
+      const total = bills.filter((b) => b.doctor === d.name).reduce((s, b) => s + Number(b.amount), 0);
+      return [d.name, d.dept, total];
+    });
+    csvDownload("doctor-collection.csv", [["Doctor", "Department", "Total Collection"], ...rows]);
+    notify("Excel (CSV) exported.");
+  }
+  function exportPatientsCsv() {
+    csvDownload("patient-history.csv", [["UHID", "Name", "Age", "Gender", "Mobile", "Dept", "Type", "Status"], ...patients.map((p) => [p.uhid, p.name, p.age, p.gender, p.mobile, p.dept, p.type, p.status])]);
+    notify("Excel (CSV) exported.");
+  }
+
+  const totalRows = Object.entries(byMode).map(([mode, v]) => ({ mode, op: v.OP || 0, ip: v.IP || 0, pharm: v.Pharmacy || 0 }));
+
+  return (
+    <div className="space-y-5">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {reports.map((r) => (
+          <GlassCard key={r.name} className="p-5 hover:-translate-y-0.5 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3"><r.icon size={20} /></div>
+            <p className="text-sm font-bold text-slate-800 mb-1">{r.name}</p>
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">{r.desc}</p>
+            <GhostBtn icon={Download} className="text-xs px-3 py-2" onClick={r.action}>Export</GhostBtn>
+          </GlassCard>
+        ))}
+      </div>
+
+      <GlassCard className="p-5">
+        <SectionTitle eyebrow={fmtDate(new Date())} title="Collection Summary (all recorded bills)" action={<div className="flex gap-2"><GhostBtn icon={Download} onClick={() => exportDaily("pdf")}>Export PDF</GhostBtn><EmeraldBtn icon={Download} onClick={() => exportDaily("csv")}>Export Excel</EmeraldBtn></div>} />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px]">
+            <thead><tr className="border-b border-slate-100"><Th>Mode</Th><Th>OP Billing</Th><Th>IP Billing</Th><Th>Pharmacy</Th><Th className="text-right">Total</Th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {totalRows.map((r) => (
+                <tr key={r.mode}><Td className="font-semibold">{r.mode}</Td><Td>{inr(r.op)}</Td><Td>{inr(r.ip)}</Td><Td>{inr(r.pharm)}</Td><Td className="text-right font-bold text-blue-600">{inr(r.op + r.ip + r.pharm)}</Td></tr>
+              ))}
+              {totalRows.length === 0 && <tr><Td colSpan={5} className="text-slate-400 text-center py-8">No bills generated yet. Create one from OP Billing, IP Billing or Pharmacy.</Td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ============================= USER MANAGEMENT ============================= */
+
+const emptyUserForm = { name: "", role: "Reception", email: "", dept: "" };
+const roleIcon = { Admin: ShieldCheck, Reception: Users, Doctor: Stethoscope, Nurse: HeartPulse, Lab: FlaskConical, Pharmacy: Pill };
+
+function UsersPage() {
+  const { staffUsers, addUser, updateUser, deleteUser } = useData();
+  const notify = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState(emptyUserForm);
+
+  const submit = () => {
+    if (!form.name.trim() || !form.email.trim()) { notify("Enter name and email.", "error"); return; }
+    addUser(form);
+    notify(`${form.name} added as ${form.role}.`);
+    setForm(emptyUserForm);
+    setModalOpen(false);
+  };
+  const toggleStatus = (u) => updateUser(u.id, { status: u.status === "Active" ? "On Leave" : "Active" });
+  const remove = (u) => { if (window.confirm(`Remove ${u.name}?`)) { deleteUser(u.id); notify("User removed.", "info"); } };
+
+  return (
+    <GlassCard className="p-5">
+      <SectionTitle eyebrow={`${staffUsers.length} active roles`} title="User & Role Management" action={<PrimaryBtn icon={Plus} onClick={() => setModalOpen(true)}>Add User</PrimaryBtn>} />
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[700px]">
+          <thead><tr className="border-b border-slate-100"><Th>User</Th><Th>Role</Th><Th>Department</Th><Th>Email</Th><Th>Status</Th><Th>Action</Th></tr></thead>
+          <tbody className="divide-y divide-slate-100">
+            {staffUsers.map((u) => {
+              const RIcon = roleIcon[u.role] || UserIcon;
+              return (
+                <tr key={u.id} className="hover:bg-blue-50/40">
+                  <Td><div className="flex items-center gap-2.5"><Avatar name={u.name} size={30} /><span className="font-semibold text-slate-700">{u.name}</span></div></Td>
+                  <Td><span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600"><RIcon size={13} className="text-blue-500" />{u.role}</span></Td>
+                  <Td>{u.dept}</Td><Td className="text-slate-500">{u.email}</Td>
+                  <Td><button onClick={() => toggleStatus(u)}><Badge label={u.status} /></button></Td>
+                  <Td><div className="flex gap-2"><button onClick={() => remove(u)} className="text-slate-400 hover:text-rose-600"><Trash2 size={15} /></button></div></Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add New User">
+        <div className="space-y-4">
+          <Field label="Full Name"><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className={inputCls} /></Field>
+          <Field label="Role"><select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} className={inputCls}>{Object.keys(roleIcon).map((r) => <option key={r}>{r}</option>)}</select></Field>
+          <Field label="Department"><input value={form.dept} onChange={(e) => setForm((f) => ({ ...f, dept: e.target.value }))} placeholder="e.g. Front Office" className={inputCls} /></Field>
+          <Field label="Email" icon={Mail}><input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className={inputClsIcon} /></Field>
+          <PrimaryBtn className="w-full justify-center" onClick={submit}>Add User</PrimaryBtn>
+        </div>
+      </Modal>
+    </GlassCard>
+  );
+}
+
+/* ============================= SETTINGS ============================= */
+
+function SettingsPage() {
+  const { settings, setSettings } = useData();
+  const notify = useToast();
+  const [tab, setTab] = useState("profile");
+  const [local, setLocal] = useState(settings);
+  const data = useData();
+
+  useEffect(() => setLocal(settings), [settings]);
+  const set = (k) => (e) => setLocal((s) => ({ ...s, [k]: e.target.value }));
+  const toggle = (k) => setLocal((s) => ({ ...s, [k]: !s[k] }));
+  const save = () => { setSettings(local); notify("Settings saved."); };
+
+  const tabs = [
+    { key: "profile", label: "Hospital Profile", icon: Building2 },
+    { key: "invoice", label: "Invoice Settings", icon: Receipt },
+    { key: "comms", label: "SMS / WhatsApp / Email", icon: MessageCircle },
+    { key: "system", label: "Printer & Backup", icon: SettingsIcon },
+  ];
+
+  return (
+    <div className="grid lg:grid-cols-4 gap-5">
+      <GlassCard className="p-3 h-fit lg:sticky lg:top-20">
+        {tabs.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium mb-1 transition ${tab === t.key ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}><t.icon size={16} /> {t.label}</button>
+        ))}
+      </GlassCard>
+
+      <GlassCard className="p-6 lg:col-span-3">
+        {tab === "profile" && (
+          <>
+            <SectionTitle title="Hospital Profile" />
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white"><HeartPulse size={28} /></div>
+              <label className="cursor-pointer"><GhostBtn icon={Upload} type="button" onClick={() => notify("Logo updated.")}>Upload Logo</GhostBtn></label>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Hospital Name"><input value={local.hospitalName} onChange={set("hospitalName")} className={inputCls} /></Field>
+              <Field label="Registration No."><input value={local.regNo} onChange={set("regNo")} className={inputCls} /></Field>
+              <Field label="Contact Number" icon={Phone}><input value={local.contact} onChange={set("contact")} className={inputClsIcon} /></Field>
+              <Field label="Email" icon={Mail}><input value={local.email} onChange={set("email")} className={inputClsIcon} /></Field>
+              <Field label="GSTIN"><input value={local.gstin} onChange={set("gstin")} className={inputCls} /></Field>
+              <Field label="Address" icon={MapPin} className="sm:col-span-2"><input value={local.address} onChange={set("address")} className={inputClsIcon} /></Field>
+            </div>
+          </>
+        )}
+        {tab === "invoice" && (
+          <>
+            <SectionTitle title="Invoice Settings" />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Invoice Prefix"><input value={local.invoicePrefix} onChange={set("invoicePrefix")} className={inputCls} /></Field>
+              <Field label="Next Invoice No."><input type="number" value={local.nextInvoiceNo} onChange={(e) => setLocal((s) => ({ ...s, nextInvoiceNo: Number(e.target.value) }))} className={inputCls} /></Field>
+              <Field label="Default GST Rate"><select value={local.gstRate} onChange={(e) => setLocal((s) => ({ ...s, gstRate: Number(e.target.value) }))} className={inputCls}><option value={5}>5%</option><option value={12}>12%</option><option value={18}>18%</option></select></Field>
+              <Field label="Currency"><input value="INR (₹)" className={inputCls} disabled /></Field>
+              <Field label="Footer Note" className="sm:col-span-2"><input value={local.footerNote} onChange={set("footerNote")} className={inputCls} /></Field>
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+              <input type="checkbox" checked={local.showQr} onChange={() => toggle("showQr")} className="rounded border-slate-300 text-blue-600" />
+              <span className="text-sm text-slate-600">Show QR code for UPI payments on printed receipts</span>
+            </div>
+          </>
+        )}
+        {tab === "comms" && (
+          <>
+            <SectionTitle title="Communication Channels" />
+            <div className="space-y-4">
+              {[{ key: "smsEnabled", label: "SMS Gateway", desc: "Appointment reminders & OTP via SMS", icon: MessageCircle },
+                { key: "whatsappEnabled", label: "WhatsApp Business API", desc: "Send bills & reports directly on WhatsApp", icon: MessageCircle },
+                { key: "emailEnabled", label: "Email Notifications", desc: "Invoices and lab reports via email", icon: Mail }].map((c) => (
+                <div key={c.key} className="flex items-center gap-3 p-4 rounded-xl border border-slate-100">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><c.icon size={18} /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold text-slate-700">{c.label}</p><p className="text-xs text-slate-400">{c.desc}</p></div>
+                  <button onClick={() => toggle(c.key)} className={`w-11 h-6 rounded-full flex items-center px-0.5 transition ${local[c.key] ? "bg-emerald-500 justify-end" : "bg-slate-200 justify-start"}`}><div className="w-5 h-5 rounded-full bg-white shadow" /></button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {tab === "system" && (
+          <>
+            <SectionTitle title="Printer & Backup" />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Default Printer"><select className={inputCls}><option>Reception Desk — Epson TM-T82</option><option>Pharmacy Counter — Epson LX310</option></select></Field>
+              <Field label="Receipt Paper Size"><select className={inputCls}><option>A4</option><option>Thermal 80mm</option></select></Field>
+            </div>
+            <div className="mt-5 p-4 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <p className="text-sm font-semibold text-emerald-700">Last backup: {(() => { try { return localStorage.getItem("suvidha_last_backup") || "Not yet run"; } catch (e) { return "Unavailable"; } })()}</p>
+                <p className="text-xs text-emerald-600/70">A backup JSON file auto-downloads once per day when the app is opened</p>
+              </div>
+              <GhostBtn icon={Download} onClick={() => { downloadBackupNow(data); notify("Backup downloaded."); }}>Backup Now</GhostBtn>
+            </div>
+          </>
+        )}
+        <div className="flex justify-end gap-3 mt-6 pt-5 border-t border-slate-100">
+          <GhostBtn onClick={() => setLocal(settings)}>Discard</GhostBtn>
+          <PrimaryBtn icon={Save} onClick={save}>Save Changes</PrimaryBtn>
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ============================= RECEIPT PREVIEW ============================= */
+
+function ReceiptPage() {
+  const { lastBill, settings, bills } = useData();
+  const bill = lastBill || bills[0];
+
+  if (!bill) {
+    return <GlassCard className="p-10 text-center text-slate-400">No bills generated yet. Create one from OP Billing, IP Billing or Pharmacy to preview a receipt here.</GlassCard>;
+  }
+
+  const items = bill.items || [];
+  const subtotal = bill.subtotal ?? items.reduce((s, i) => s + Number(i.amount ?? i.amt ?? (i.price * i.qty) ?? 0), 0);
+  const gst = bill.gst ?? 0;
+  const total = bill.amount ?? subtotal + gst;
+
+  const doPrint = () => {
+    printDocument(`Invoice ${bill.id}`, `
+      <div class="header"><div><div class="brand">${settings.hospitalName}</div><div class="muted">${settings.address}</div><div class="muted">GSTIN: ${settings.gstin}</div></div>
+      <div style="text-align:right"><div class="muted">Invoice No.</div><div style="font-weight:700">${bill.id}</div><div class="muted" style="margin-top:6px">${fmtDate(bill.date)}</div></div></div>
+      <p><b>Patient:</b> ${bill.patient} ${bill.doctor ? `&nbsp; <b>Doctor:</b> ${bill.doctor}` : ""}</p>
+      <table><thead><tr><th>Item</th><th class="right">Amount</th></tr></thead><tbody>
+      ${items.map((i) => `<tr><td>${i.name || i.label}</td><td class="right">${inr(i.amount ?? i.amt ?? (i.price * i.qty))}</td></tr>`).join("")}
+      <tr class="total-row"><td>Total</td><td class="right">${inr(total)}</td></tr>
+      </tbody></table><p class="muted">Payment Method: ${bill.mode}</p>
+    `);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex justify-end gap-3 mb-4">
+        <GhostBtn icon={MessageCircle} onClick={() => window.open(waLink(bill.mobile || "", `${settings.hospitalName}\nBill ${bill.id}\nTotal: ${inr(total)}`), "_blank")}>WhatsApp</GhostBtn>
+        <PrimaryBtn icon={Printer} onClick={doPrint}>Print A4</PrimaryBtn>
+      </div>
+      <GlassCard className="p-8 bg-white">
+        <div className="flex items-start justify-between pb-5 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white"><HeartPulse size={26} /></div>
+            <div>
+              <p className="text-lg font-extrabold text-slate-800 font-display leading-none">{settings.hospitalName}</p>
+              <p className="text-xs text-slate-500 mt-1.5">{settings.address}</p>
+              <p className="text-xs text-slate-500">Phone: {settings.contact} · GSTIN: {settings.gstin}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-400">Invoice No.</p><p className="text-sm font-bold text-slate-800">{bill.id}</p>
+            <p className="text-xs text-slate-400 mt-2">Date</p><p className="text-sm font-semibold text-slate-700">{fmtDate(bill.date)}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 py-5 border-b border-slate-200 text-sm">
+          <div><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Patient</p><p className="font-bold text-slate-800">{bill.patient}</p>{bill.mobile && <p className="text-xs text-slate-500">Mobile: {bill.mobile}</p>}</div>
+          <div className="text-right"><p className="text-xs font-semibold text-slate-400 uppercase mb-1">Bill Type</p><p className="font-bold text-slate-800">{bill.type}</p><p className="text-xs text-slate-500">Payment: {bill.mode}</p></div>
+        </div>
+        <table className="w-full my-5">
+          <thead><tr className="border-b border-slate-200"><Th className="pl-0">Item</Th><Th className="text-right pr-0">Amount</Th></tr></thead>
+          <tbody className="divide-y divide-slate-100">{items.map((it, idx) => (
+            <tr key={idx}><Td className="pl-0">{it.name || it.label}</Td><Td className="text-right pr-0 font-semibold">{inr(it.amount ?? it.amt ?? (it.price * it.qty))}</Td></tr>
+          ))}</tbody>
+        </table>
+        <div className="flex justify-end"><div className="w-56 space-y-2 text-sm">
+          <div className="flex justify-between font-bold text-slate-800 text-base"><span>Total</span><span>{inr(total)}</span></div>
+        </div></div>
+        <div className="flex items-end justify-between mt-8 pt-5 border-t border-dashed border-slate-300">
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center"><QrCode size={36} className="text-slate-400" /></div>
+            <Barcode size={40} className="text-slate-700" />
+          </div>
+          <div className="text-center"><p className="text-sm italic text-slate-500 mb-1 border-b border-slate-300 pb-2 px-6">{bill.doctor || "Authorized Signatory"}</p><p className="text-[10px] text-slate-400">Signature</p></div>
+        </div>
+        <p className="text-center text-[11px] text-slate-400 mt-6">{settings.footerNote}</p>
+      </GlassCard>
+    </div>
+  );
+}
+
+/* ============================= APP SHELL ============================= */
+
+const TITLES = {
+  dashboard: "Dashboard", patients: "Patient Registration", appointments: "Appointments",
+  opbilling: "OP Billing", ipadmission: "IP Admission", ipbilling: "Inpatient Billing",
+  doctors: "Doctor Management", pharmacy: "Pharmacy", lab: "Laboratory", reports: "Reports",
+  users: "User Management", settings: "Settings", receipt: "Billing Receipt",
+};
+
+function AppInner() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState("Rahul Joshi");
+  const [page, setPage] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useAutoDailyBackup();
+
+  const content = useMemo(() => {
+    switch (page) {
+      case "dashboard": return <Dashboard setPage={setPage} />;
+      case "patients": return <PatientsPage />;
+      case "appointments": return <AppointmentsPage />;
+      case "opbilling": return <OPBillingPage />;
+      case "ipadmission": return <IPAdmissionPage />;
+      case "ipbilling": return <IPBillingPage />;
+      case "doctors": return <DoctorsPage />;
+      case "pharmacy": return <PharmacyPage />;
+      case "lab": return <LabPage />;
+      case "reports": return <ReportsPage />;
+      case "users": return <UsersPage />;
+      case "settings": return <SettingsPage />;
+      case "receipt": return <ReceiptPage />;
+      default: return <Dashboard setPage={setPage} />;
+    }
+  }, [page]);
+
+  if (!loggedIn) return <LoginPage onLogin={(name) => { setCurrentUser(name); setLoggedIn(true); }} />;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-emerald-50/30 font-sans text-slate-800">
+      <div className="flex">
+        <Sidebar page={page} setPage={setPage} open={sidebarOpen} setOpen={setSidebarOpen} currentUser={currentUser} onLogout={() => setLoggedIn(false)} />
+        <div className="flex-1 min-w-0">
+          <Topbar setOpen={setSidebarOpen} title={TITLES[page]} currentUser={currentUser} />
+          <main className="p-4 sm:p-6 max-w-[1600px] mx-auto">{content}</main>
+          <DevCredit />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <DataProvider>
+        <AppInner />
+      </DataProvider>
+    </ToastProvider>
+  );
+}
+
+
+const rootEl = ReactDOM.createRoot(document.getElementById("root"));
+rootEl.render(<App />);
+document.getElementById("boot-loader")?.remove();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
