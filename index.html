@@ -1119,7 +1119,14 @@ async function installApp(){
     toast('Please host this app online first (see README.txt), then open it in Chrome to install.');
     return;
   }
-  toast('If using Chrome: tap menu (⋮) → "Install app" / "Add to Home screen" to install.');
+  openSheet(`
+  <h3>Install MobiStock</h3>
+  <div class="miniNote">The one-tap install button isn't ready yet in this browser session. Use one of these instead — both work every time:</div>
+  <div class="actionsheet-item"><span class="ic">💻</span><div><b>On Desktop Chrome:</b><br><span style="font-weight:500;font-size:12.5px;color:var(--muted);">Look for an install icon (⊕ or monitor icon) at the right end of the address bar and click it. If you don't see it: menu (⋮) → "Save and share" → "Install page as app…"</span></div></div>
+  <div class="actionsheet-item"><span class="ic">📱</span><div><b>On Android Chrome:</b><br><span style="font-weight:500;font-size:12.5px;color:var(--muted);">Menu (⋮) → "Install app" or "Add to Home screen"</span></div></div>
+  <div class="actionsheet-item"><span class="ic">🔎</span><div><b>Already installed?</b><br><span style="font-weight:500;font-size:12.5px;color:var(--muted);">Check by opening chrome://apps in a new tab — if MobiStock is listed there, it's already installed and won't prompt again.</span></div></div>
+  <button class="btn btn-outline btn-block" style="margin-top:6px;" onclick="closeSheet()">Got it</button>
+  `);
 }
 </script>
 </body>
