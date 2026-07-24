@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#5B21B6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-apple-touch.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MobiStock">
+<title>MobiStock — Wholesale Manager</title>
+<style>
+:root{
+  --primary:#5B21B6;
+  --primary-light:#7C3AED;
+  --primary-dark:#3B1275;
+  --accent:#FF6B4A;
+  --accent-dark:#E5502F;
+  --teal:#06B6D4;
+  --success:#10B981;
+  --warning:#F59E0B;
+  --danger:#EF4444;
+  --bg:#F5F3FB;
+  --card:#FFFFFF;
+  --text:#221B36;
+  --muted:#7A7590;
+  --border:#E9E4F5;
+  --radius:16px;
+  --shadow:0 4px 16px rgba(91,33,182,0.10);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overscroll-behavior:none;
+}
+#appRoot{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative;}
+
+/* Top bar */
+.topbar{
+  background:linear-gradient(120deg,var(--primary) 0%,var(--primary-light) 100%);
+  color:#fff; padding:14px 16px; display:flex; align-items:center; gap:10px;
+  position:sticky; top:0; z-index:50; box-shadow:0 2px 12px rgba(59,18,117,0.25);
+}
+.topbar .backBtn{background:rgba(255,255,255,0.18); border:none; color:#fff; width:34px;height:34px;border-radius:10px;font-size:18px; display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.topbar .titleBlock{flex:1; min-width:0;}
+.topbar h1{font-size:17px; margin:0; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.topbar .sub{font-size:11px; opacity:0.85; margin-top:1px;}
+.topbar .iconBtn{background:rgba(255,255,255,0.18); border:none; color:#fff; width:34px;height:34px;border-radius:10px;font-size:16px; display:flex;align-items:center;justify-content:center;cursor:pointer;}
+
+/* Content */
+#content{flex:1; padding:14px 14px 90px 14px; overflow-y:auto;}
+
+/* Bottom nav */
+.bottomnav{position:sticky; bottom:0; background:#fff; display:flex; border-top:1px solid var(--border); z-index:50; box-shadow:0 -4px 16px rgba(91,33,182,0.08);}
+.navbtn{flex:1; border:none; background:none; padding:8px 2px 10px; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--muted); cursor:pointer; font-weight:600;}
+.navbtn .ic{font-size:19px;}
+.navbtn.active{color:var(--primary);}
+.navbtn.active .ic{transform:scale(1.1);}
+
+/* Cards */
+.card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:12px;}
+.statgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+.statcard{border-radius:14px; padding:14px; color:#fff; position:relative; overflow:hidden;}
+.statcard .val{font-size:20px; font-weight:800; margin-top:4px;}
+.statcard .lbl{font-size:11.5px; opacity:0.92; font-weight:600;}
+.statcard .ic{position:absolute; right:10px; top:10px; font-size:26px; opacity:0.35;}
+.sc1{background:linear-gradient(135deg,#7C3AED,#5B21B6);}
+.sc2{background:linear-gradient(135deg,#FF8A65,#FF6B4A);}
+.sc3{background:linear-gradient(135deg,#22D3EE,#06B6D4);}
+.sc4{background:linear-gradient(135deg,#34D399,#10B981);}
+
+.sectionTitle{font-size:14.5px; font-weight:800; color:var(--primary-dark); margin:18px 0 8px; display:flex; align-items:center; justify-content:space-between;}
+.sectionTitle a{font-size:12px; color:var(--accent); font-weight:700; cursor:pointer;}
+
+.quickrow{display:flex; gap:8px; margin-bottom:6px;}
+.qbtn{flex:1; border:none; border-radius:12px; padding:12px 6px; font-size:12px; font-weight:700; color:#fff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px;}
+.qbtn .ic{font-size:18px;}
+
+/* Buttons */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:12px; padding:12px 16px; font-weight:700; font-size:14px; cursor:pointer;}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-accent{background:var(--accent); color:#fff;}
+.btn-outline{background:#fff; border:1.5px solid var(--border); color:var(--text);}
+.btn-success{background:var(--success); color:#fff;}
+.btn-danger{background:var(--danger); color:#fff;}
+.btn-teal{background:var(--teal); color:#fff;}
+.btn-block{width:100%;}
+.btn-sm{padding:8px 10px; font-size:12.5px; border-radius:9px;}
+.btn:disabled{opacity:0.5;}
+
+/* Forms */
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:5px;}
+.field input, .field select, .field textarea{
+  width:100%; padding:11px 12px; border-radius:11px; border:1.5px solid var(--border); font-size:14.5px; background:#fff; color:var(--text); font-family:inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--primary-light);}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+/* Search */
+.searchbar{display:flex; gap:8px; margin-bottom:12px;}
+.searchbar input{flex:1; padding:11px 14px; border-radius:12px; border:1.5px solid var(--border); font-size:14px;}
+.searchbar .fab{width:44px;height:44px;border-radius:12px; background:var(--accent); color:#fff; border:none; font-size:20px; flex-shrink:0;}
+
+.chiprow{display:flex; gap:7px; overflow-x:auto; margin-bottom:12px; padding-bottom:2px;}
+.chip{flex-shrink:0; padding:7px 14px; border-radius:20px; background:#fff; border:1.5px solid var(--border); font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer; white-space:nowrap;}
+.chip.active{background:var(--primary); border-color:var(--primary); color:#fff;}
+
+/* Product card */
+.plist{display:flex; flex-direction:column; gap:10px;}
+.pcard{background:#fff; border-radius:14px; box-shadow:var(--shadow); display:flex; gap:10px; padding:10px; position:relative;}
+.pcard img{width:64px;height:64px;border-radius:10px;object-fit:cover; background:#EFEAFB; flex-shrink:0;}
+.pcard .noimg{width:64px;height:64px;border-radius:10px;background:#EFEAFB; display:flex;align-items:center;justify-content:center; font-size:24px; flex-shrink:0;}
+.pcard .info{flex:1; min-width:0;}
+.pcard .pname{font-weight:800; font-size:14.5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pcard .pcat{font-size:11px; color:var(--muted); margin-bottom:5px;}
+.pcard .pmeta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.price{font-weight:800; color:var(--primary-dark); font-size:14px;}
+.badge{font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:20px;}
+.badge-ok{background:#DCFCE7; color:#15803D;}
+.badge-low{background:#FEF3C7; color:#B45309;}
+.badge-out{background:#FEE2E2; color:#B91C1C;}
+.pcard .actions{display:flex; flex-direction:column; gap:6px; justify-content:center;}
+.iconsm{width:32px;height:32px;border-radius:9px;border:none;background:#F3EEFF;color:var(--primary); font-size:14px; cursor:pointer;}
+.checkdot{position:absolute; left:8px; top:8px; width:20px;height:20px;border-radius:50%; border:2px solid #fff; background:var(--border);}
+.checkdot.on{background:var(--success);}
+
+/* Invoice / list rows */
+.listrow{background:#fff; border-radius:14px; box-shadow:var(--shadow); padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;}
+.listrow .l1{font-weight:800; font-size:14px;}
+.listrow .l2{font-size:11.5px; color:var(--muted); margin-top:2px;}
+.statuschip{font-size:10.5px; font-weight:800; padding:4px 10px; border-radius:20px; flex-shrink:0;}
+.st-paid{background:#DCFCE7; color:#15803D;}
+.st-partial{background:#FEF3C7; color:#B45309;}
+.st-udhar{background:#FEE2E2; color:#B91C1C;}
+
+/* Cart */
+.cartrow{display:flex; align-items:center; gap:10px; background:#fff; border-radius:12px; padding:9px 10px; margin-bottom:8px; box-shadow:var(--shadow);}
+.cartrow .ci{flex:1; min-width:0;}
+.cartrow .cn{font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cartrow .cp{font-size:11.5px; color:var(--muted);}
+.stepper{display:flex; align-items:center; gap:6px;}
+.stepper button{width:26px;height:26px;border-radius:8px; border:none; background:var(--primary); color:#fff; font-size:15px; font-weight:800; cursor:pointer;}
+.stepper span{min-width:20px; text-align:center; font-weight:800; font-size:13px;}
+
+.totalsbox{background:#fff; border-radius:14px; box-shadow:var(--shadow); padding:14px; margin:12px 0;}
+.trow{display:flex; justify-content:space-between; padding:5px 0; font-size:13.5px;}
+.trow.grand{font-size:17px; font-weight:800; color:var(--primary-dark); border-top:1.5px dashed var(--border); margin-top:6px; padding-top:10px;}
+
+.empty{text-align:center; padding:40px 20px; color:var(--muted);}
+.empty .bigic{font-size:44px; margin-bottom:10px;}
+
+/* Modal / sheet */
+.overlay{position:fixed; inset:0; background:rgba(34,27,54,0.45); z-index:200; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:#fff; width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:18px; max-height:88vh; overflow-y:auto; animation:slideup .22s ease;}
+@keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+.sheet h3{margin:0 0 14px; font-size:16.5px; color:var(--primary-dark);}
+.sheet .close{position:absolute; right:16px;}
+
+.toast{position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#221B36; color:#fff; padding:11px 18px; border-radius:12px; font-size:13.5px; z-index:400; box-shadow:0 6px 20px rgba(0,0,0,0.25); font-weight:600; max-width:85%; text-align:center;}
+
+.imgupload{width:100%; height:130px; border-radius:14px; border:2px dashed var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); font-size:12.5px; font-weight:700; cursor:pointer; overflow:hidden; position:relative; background:#FAF9FF;}
+.imgupload img{width:100%;height:100%;object-fit:cover; position:absolute; top:0; left:0;}
+.imgupload .icbig{font-size:26px; margin-bottom:4px;}
+
+.divider{height:1px; background:var(--border); margin:14px 0;}
+
+.printable{background:#fff; padding:14px; font-family:'Courier New',monospace; font-size:12px;}
+.printable h2{font-size:15px; margin:0 0 2px;}
+.printable table{width:100%; border-collapse:collapse; margin-top:8px;}
+.printable th,.printable td{text-align:left; padding:4px 2px; font-size:11.5px; border-bottom:1px dashed #ccc;}
+#printArea{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #printArea, #printArea *{visibility:visible;}
+  #printArea{display:block !important; position:absolute; top:0; left:0; width:100%;}
+}
+
+.actionsheet-item{display:flex; align-items:center; gap:12px; padding:13px 4px; font-weight:700; font-size:14.5px; cursor:pointer; border-bottom:1px solid var(--border);}
+.actionsheet-item:last-child{border-bottom:none;}
+.actionsheet-item .ic{font-size:20px; width:26px; text-align:center;}
+
+.miniNote{font-size:11.5px; color:var(--muted); background:#F3EEFF; padding:9px 11px; border-radius:10px; margin-bottom:12px; line-height:1.5;}
+.ledgerrow{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px;}
+.ledgerrow:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div id="appRoot">
+  <div class="topbar">
+    <button class="backBtn" id="backBtn" style="display:none;" onclick="goBack()">←</button>
+    <div class="titleBlock">
+      <h1 id="pageTitle">MobiStock</h1>
+      <div class="sub" id="pageSub">Wholesale Manager</div>
+    </div>
+    <button class="iconBtn" onclick="goto('settings')">⚙️</button>
+  </div>
+  <div id="content"></div>
+  <div id="printArea"></div>
+  <div class="bottomnav">
+    <button class="navbtn" data-scr="dashboard" onclick="goto('dashboard')"><span class="ic">🏠</span>Home</button>
+    <button class="navbtn" data-scr="products" onclick="goto('products')"><span class="ic">📦</span>Products</button>
+    <button class="navbtn" data-scr="billing" onclick="goto('billing')"><span class="ic">🧾</span>Billing</button>
+    <button class="navbtn" data-scr="customers" onclick="goto('customers')"><span class="ic">👥</span>Customers</button>
+    <button class="navbtn" data-scr="reports" onclick="goto('reports')"><span class="ic">📊</span>Reports</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ================= DB LAYER ================= */
+let db;
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('MobiStockDB',1);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('products'))d.createObjectStore('products',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('customers'))d.createObjectStore('customers',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('invoices'))d.createObjectStore('invoices',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('settings'))d.createObjectStore('settings',{keyPath:'key'});
+    };
+    req.onsuccess=e=>{db=e.target.result; resolve(db);};
+    req.onerror=e=>reject(e);
+  });
+}
+function dbGetAll(store){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbGet(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbPut(store,val){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).put(val);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbDelete(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).delete(key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+
+let SETTINGS={shopName:'KAVITHA TELECOM', phone:'89390 00833 / 90436 65107', address:'Shop No.34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002', gst:'', currency:'₹', logo:'', invoiceCounter:1};
+async function loadSettings(){
+  const rows=await dbGetAll('settings');
+  rows.forEach(r=>{SETTINGS[r.key]=r.value;});
+}
+async function saveSetting(key,value){SETTINGS[key]=value; await dbPut('settings',{key,value});}
+
+/* ================= STATE / NAV ================= */
+let history=[{screen:'dashboard',param:null}];
+let PRODUCTS=[], CUSTOMERS=[], INVOICES=[];
+let CART=[]; // {productId,name,price,qty,stock}
+let billingCustomer=null; // {id,name,phone} or null=walk-in
+let productFilter='';
+let categoryFilter='All';
+let selectMode=false;
+let selectedIds=new Set();
+
+async function refreshData(){
+  PRODUCTS=await dbGetAll('products');
+  CUSTOMERS=await dbGetAll('customers');
+  INVOICES=await dbGetAll('invoices');
+}
+
+function fmt(n){return SETTINGS.currency+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});}
+function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function fmtDateTime(d){return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function uid(){return Date.now()+'-'+Math.floor(Math.random()*100000);}
+
+function goto(screen,param,replace){
+  if(replace){history[history.length-1]={screen,param};}
+  else history.push({screen,param});
+  render();
+}
+function goBack(){
+  if(history.length>1){history.pop(); render();}
+}
+function render(){
+  const cur=history[history.length-1];
+  document.getElementById('backBtn').style.display = history.length>1 ? 'flex':'none';
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.scr===cur.screen));
+  const titles={dashboard:['MobiStock','Wholesale Manager'],products:['Products','Manage your stock'],billing:['Billing','Invoices & bills'],customers:['Customers','Udhar & contacts'],reports:['Reports','Sales & stock'],settings:['Settings','Shop & printer'],newbill:['New Bill','Create invoice'],invoicedetail:['Invoice','Details'],customerdetail:['Customer','Ledger']};
+  const t=titles[cur.screen]||['MobiStock',''];
+  document.getElementById('pageTitle').textContent=t[0];
+  document.getElementById('pageSub').textContent=t[1];
+  const c=document.getElementById('content');
+  if(cur.screen==='dashboard')c.innerHTML=renderDashboard();
+  else if(cur.screen==='products')c.innerHTML=renderProducts();
+  else if(cur.screen==='billing')c.innerHTML=renderBillingList();
+  else if(cur.screen==='newbill')c.innerHTML=renderNewBill();
+  else if(cur.screen==='invoicedetail')c.innerHTML=renderInvoiceDetail(cur.param);
+  else if(cur.screen==='customers')c.innerHTML=renderCustomers();
+  else if(cur.screen==='customerdetail')c.innerHTML=renderCustomerDetail(cur.param);
+  else if(cur.screen==='reports')c.innerHTML=renderReports();
+  else if(cur.screen==='settings')c.innerHTML=renderSettings();
+  window.scrollTo(0,0);
+}
+
+function toast(msg){
+  const el=document.createElement('div');
+  el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2200);
+}
+
+/* ================= SHEET / MODAL HELPER ================= */
+function openSheet(html){
+  closeSheet();
+  const ov=document.createElement('div');
+  ov.className='overlay'; ov.id='activeOverlay';
+  ov.onclick=(e)=>{if(e.target===ov)closeSheet();};
+  ov.innerHTML='<div class="sheet">'+html+'</div>';
+  document.body.appendChild(ov);
+}
+function closeSheet(){const ov=document.getElementById('activeOverlay'); if(ov)ov.remove();}
+
+/* ================= IMAGE HELPERS ================= */
+function compressImage(file,maxW=640,quality=0.72){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>maxW){h=Math.round(h*maxW/w); w=maxW;}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=reject;
+      img.src=e.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+function dataURLtoBlob(dataurl){
+  const arr=dataurl.split(','), mime=arr[0].match(/:(.*?);/)[1], bstr=atob(arr[1]);
+  let n=bstr.length; const u8=new Uint8Array(n);
+  while(n--){u8[n]=bstr.charCodeAt(n);}
+  return new Blob([u8],{type:mime});
+}
+
+/* ================= DASHBOARD ================= */
+function renderDashboard(){
+  const today=new Date().toDateString();
+  const todayInvoices=INVOICES.filter(i=>new Date(i.date).toDateString()===today);
+  const todaySales=todayInvoices.reduce((s,i)=>s+i.total,0);
+  const totalDue=CUSTOMERS.reduce((s,c)=>s+(c.due||0),0);
+  const lowStock=PRODUCTS.filter(p=>p.stock<=(p.lowStock||5) && p.stock>0).length;
+  const outStock=PRODUCTS.filter(p=>p.stock<=0).length;
+  const recent=[...INVOICES].sort((a,b)=>b.date-a.date).slice(0,5);
+  return `
+  <div class="statgrid">
+    <div class="statcard sc1"><span class="ic">💰</span><div class="lbl">Today's Sales</div><div class="val">${fmt(todaySales)}</div></div>
+    <div class="statcard sc2"><span class="ic">🤝</span><div class="lbl">Udhar Pending</div><div class="val">${fmt(totalDue)}</div></div>
+    <div class="statcard sc3"><span class="ic">📦</span><div class="lbl">Total Products</div><div class="val">${PRODUCTS.length}</div></div>
+    <div class="statcard sc4"><span class="ic">⚠️</span><div class="lbl">Low / Out of Stock</div><div class="val">${lowStock+outStock}</div></div>
+  </div>
+  <div class="quickrow">
+    <button class="qbtn" style="background:var(--accent)" onclick="goto('newbill')"><span class="ic">🧾</span>New Bill</button>
+    <button class="qbtn" style="background:var(--primary)" onclick="openProductForm()"><span class="ic">📦</span>Add Product</button>
+    <button class="qbtn" style="background:var(--teal)" onclick="openCustomerForm()"><span class="ic">👤</span>Add Customer</button>
+  </div>
+  <div class="sectionTitle">Recent Invoices <a onclick="goto('billing')">See all</a></div>
+  ${recent.length? recent.map(inv=>invoiceRowHTML(inv)).join('') : `<div class="empty"><div class="bigic">🧾</div>No invoices yet.<br>Tap "New Bill" to create your first one.</div>`}
+  `;
+}
+
+/* ================= PRODUCTS ================= */
+function renderProducts(){
+  const cats=['All',...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))];
+  let list=PRODUCTS.filter(p=>{
+    const okCat = categoryFilter==='All' || p.category===categoryFilter;
+    const okSearch = !productFilter || p.name.toLowerCase().includes(productFilter.toLowerCase());
+    return okCat && okSearch;
+  });
+  return `
+  <div class="searchbar">
+    <input type="text" placeholder="Search products..." value="${escAttr(productFilter)}" oninput="productFilter=this.value; renderInto('products');">
+    <button class="fab" onclick="openProductForm()">+</button>
+  </div>
+  <div class="chiprow">${cats.map(c=>`<div class="chip ${c===categoryFilter?'active':''}" onclick="categoryFilter='${escAttr(c)}'; renderInto('products');">${c}</div>`).join('')}</div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <span style="font-size:12px;color:var(--muted);font-weight:700;">${list.length} product(s)</span>
+    <span style="font-size:12.5px;color:var(--accent);font-weight:700;cursor:pointer;" onclick="toggleSelectMode()">${selectMode? 'Cancel':'Select to Share 📤'}</span>
+  </div>
+  ${selectMode? `<div class="miniNote">Select products, then tap Share below to send catalog via WhatsApp as PDF or Images.</div>`:''}
+  <div class="plist">
+  ${list.length? list.map(p=>productCardHTML(p)).join(''): `<div class="empty"><div class="bigic">📦</div>No products found.<br>Tap + to add your first product.</div>`}
+  </div>
+  ${selectMode? `<div style="position:fixed;bottom:70px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 14px;"><button class="btn btn-accent btn-block" onclick="shareSelectedProducts()">📤 Share Selected (${selectedIds.size})</button></div>`:''}
+  `;
+}
+function productCardHTML(p){
+  const stockBadge = p.stock<=0? `<span class="badge badge-out">Out of Stock</span>` : (p.stock<=(p.lowStock||5)? `<span class="badge badge-low">Low: ${p.stock} ${p.unit||'pcs'}</span>` : `<span class="badge badge-ok">${p.stock} ${p.unit||'pcs'} in stock</span>`);
+  const checked = selectedIds.has(p.id);
+  return `
+  <div class="pcard" onclick="${selectMode? `toggleSelect('${p.id}')` : `openProductForm('${p.id}')`}">
+    ${selectMode? `<div class="checkdot ${checked?'on':''}"></div>`:''}
+    ${p.image? `<img src="${p.image}">` : `<div class="noimg">📱</div>`}
+    <div class="info">
+      <div class="pname">${escHtml(p.name)}</div>
+      <div class="pcat">${escHtml(p.category||'General')}</div>
+      <div class="pmeta"><span class="price">${fmt(p.price)}</span>${stockBadge}</div>
+    </div>
+    ${!selectMode? `<div class="actions" onclick="event.stopPropagation()">
+      <button class="iconsm" onclick="shareProductImage('${p.id}')">📤</button>
+      <button class="iconsm" onclick="deleteProductConfirm('${p.id}')">🗑️</button>
+    </div>`:''}
+  </div>`;
+}
+function toggleSelectMode(){selectMode=!selectMode; selectedIds.clear(); renderInto('products');}
+function toggleSelect(id){ if(selectedIds.has(id))selectedIds.delete(id); else selectedIds.add(id); renderInto('products');}
+
+async function openProductForm(id){
+  const p = id? PRODUCTS.find(x=>x.id===id) : {id:uid(), name:'', category:'', price:'', stock:'', unit:'pcs', lowStock:5, image:''};
+  const isEdit=!!id;
+  openSheet(`
+    <h3>${isEdit?'Edit Product':'Add Product'}</h3>
+    <label class="imgupload" id="imgUploadBox">
+      ${p.image? `<img src="${p.image}">` : `<div class="icbig">📷</div>Tap to add product photo`}
+      <input type="file" accept="image/*" style="display:none" id="imgFileInput" onchange="handleImgSelect(event)">
+    </label>
+    <div class="field"><label>Product Name *</label><input id="f_name" value="${escAttr(p.name)}" placeholder="e.g. Type-C Cable 1m"></div>
+    <div class="field"><label>Category</label><input id="f_cat" value="${escAttr(p.category||'')}" placeholder="e.g. Cables, Chargers, Earphones" list="catlist">
+      <datalist id="catlist">${[...new Set(PRODUCTS.map(x=>x.category).filter(Boolean))].map(c=>`<option value="${escAttr(c)}">`).join('')}</datalist>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Price (${SETTINGS.currency}) *</label><input id="f_price" type="number" value="${p.price}" placeholder="0"></div>
+      <div class="field"><label>Stock Qty *</label><input id="f_stock" type="number" value="${p.stock}" placeholder="0"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Unit</label><input id="f_unit" value="${escAttr(p.unit||'pcs')}" placeholder="pcs / box"></div>
+      <div class="field"><label>Low Stock Alert</label><input id="f_low" type="number" value="${p.lowStock||5}" placeholder="5"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveProduct('${p.id}',${isEdit})">Save Product</button>
+    ${isEdit? `<button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>
+    <button class="btn btn-danger btn-block" style="margin-top:8px;" onclick="deleteProductConfirm('${p.id}')">Delete Product</button>` : `<button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`}
+  `);
+  window.__tempImage = p.image||'';
+}
+async function handleImgSelect(e){
+  const file=e.target.files[0]; if(!file)return;
+  const dataUrl=await compressImage(file);
+  window.__tempImage=dataUrl;
+  document.getElementById('imgUploadBox').innerHTML=`<img src="${dataUrl}"><input type="file" accept="image/*" style="display:none" id="imgFileInput" onchange="handleImgSelect(event)">`;
+}
+async function saveProduct(id,isEdit){
+  const name=document.getElementById('f_name').value.trim();
+  const price=parseFloat(document.getElementById('f_price').value)||0;
+  const stock=parseFloat(document.getElementById('f_stock').value)||0;
+  if(!name){toast('Please enter product name'); return;}
+  const prod={
+    id:id, name, category:document.getElementById('f_cat').value.trim(),
+    price, stock, unit:document.getElementById('f_unit').value.trim()||'pcs',
+    lowStock:parseFloat(document.getElementById('f_low').value)||5,
+    image:window.__tempImage||'', createdAt: isEdit? (PRODUCTS.find(p=>p.id===id)||{}).createdAt||Date.now() : Date.now()
+  };
+  await dbPut('products',prod);
+  await refreshData();
+  closeSheet(); toast('Product saved ✓'); renderInto('products');
+}
+async function deleteProductConfirm(id){
+  closeSheet();
+  openSheet(`<h3>Delete Product?</h3><p style="color:var(--muted);font-size:13.5px;">This cannot be undone.</p>
+  <button class="btn btn-danger btn-block" onclick="deleteProduct('${id}')">Yes, Delete</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`);
+}
+async function deleteProduct(id){
+  await dbDelete('products',id); await refreshData(); closeSheet(); toast('Product deleted'); renderInto('products');
+}
+
+/* Share single product image */
+async function shareProductImage(id){
+  const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  if(!p.image){toast('No image for this product'); return;}
+  const blob=dataURLtoBlob(p.image);
+  const file=new File([blob], p.name.replace(/\s+/g,'_')+'.jpg', {type:'image/jpeg'});
+  const text=`${p.name}\nPrice: ${fmt(p.price)}${p.category? '\nCategory: '+p.category:''}`;
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:p.name, text}); }catch(e){}
+  } else {
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=file.name; a.click();
+    toast('Image downloaded — share it via WhatsApp manually');
+  }
+}
+async function shareSelectedProducts(){
+  if(selectedIds.size===0){toast('Select at least one product'); return;}
+  const items=PRODUCTS.filter(p=>selectedIds.has(p.id));
+  openSheet(`
+  <h3>Share Catalog</h3>
+  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogPDF(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">📄</span>Share as PDF (with images)</div>
+  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogImages(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🖼️</span>Share as Images</div>
+  `);
+}
+async function shareCatalogImages(ids){
+  const items=PRODUCTS.filter(p=>ids.includes(p.id) && p.image);
+  if(!items.length){toast('No images available for selected products'); return;}
+  const files=items.map(p=>new File([dataURLtoBlob(p.image)], p.name.replace(/\s+/g,'_')+'.jpg',{type:'image/jpeg'}));
+  if(navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files, title:'Product Catalog', text:SETTINGS.shopName+' — Product Catalog'}); return; }catch(e){}
+  }
+  files.forEach(f=>{const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; a.click();});
+  toast('Images downloaded — share via WhatsApp manually');
+}
+async function shareCatalogPDF(ids){
+  const items=PRODUCTS.filter(p=>ids.includes(p.id));
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.setFontSize(16); doc.setTextColor(91,33,182);
+  doc.text(SETTINGS.shopName||'Product Catalog', 14, 16);
+  doc.setFontSize(10); doc.setTextColor(120,120,120);
+  doc.text(fmtDate(Date.now()), 14, 22);
+  let y=32, x=14; const cardW=88, cardH=48;
+  for(let i=0;i<items.length;i++){
+    const p=items[i];
+    if(y+cardH>280){doc.addPage(); y=20;}
+    doc.setDrawColor(230,225,245); doc.roundedRect(x,y,cardW,cardH,3,3);
+    if(p.image){ try{ doc.addImage(p.image,'JPEG',x+3,y+3,26,26); }catch(e){} }
+    doc.setFontSize(10.5); doc.setTextColor(30,20,50);
+    doc.text(doc.splitTextToSize(p.name,cardW-33), x+32, y+10);
+    doc.setFontSize(9.5); doc.setTextColor(90,90,90);
+    doc.text(p.category||'', x+32, y+26);
+    doc.setFontSize(11); doc.setTextColor(91,33,182);
+    doc.text(SETTINGS.currency+p.price, x+32, y+38);
+    if(x===14){x=108;} else {x=14; y+=cardH+6;}
+  }
+  const blob=doc.output('blob');
+  const file=new File([blob],'Product_Catalog.pdf',{type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'Product Catalog', text:SETTINGS.shopName+' — Product Catalog'}); return; }catch(e){}
+  }
+  doc.save('Product_Catalog.pdf');
+  toast('PDF downloaded — share via WhatsApp manually');
+}
+
+/* ================= BILLING ================= */
+function invoiceRowHTML(inv){
+  const stCls = inv.status==='Paid'?'st-paid': inv.status==='Partial'?'st-partial':'st-udhar';
+  return `<div class="listrow" onclick="goto('invoicedetail','${inv.id}')">
+    <div><div class="l1">${escHtml(inv.customerName||'Walk-in Customer')}</div><div class="l2">#${inv.invoiceNo} · ${fmtDate(inv.date)}</div></div>
+    <div style="text-align:right;"><div class="l1">${fmt(inv.total)}</div><span class="statuschip ${stCls}">${inv.status}</span></div>
+  </div>`;
+}
+function renderBillingList(){
+  const list=[...INVOICES].sort((a,b)=>b.date-a.date);
+  return `
+  <button class="btn btn-accent btn-block" onclick="goto('newbill')">➕ Create New Bill</button>
+  <div class="sectionTitle">All Invoices (${list.length})</div>
+  ${list.length? list.map(invoiceRowHTML).join(''): `<div class="empty"><div class="bigic">🧾</div>No invoices yet.</div>`}
+  `;
+}
+function renderNewBill(){
+  const total=CART.reduce((s,i)=>s+i.price*i.qty,0);
+  return `
+  <div class="card">
+    <label style="font-size:12.5px;font-weight:700;color:var(--muted);">Customer</label>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <div style="flex:1;padding:11px 12px;border-radius:11px;border:1.5px solid var(--border);font-size:14px;" onclick="pickCustomerSheet()">
+        ${billingCustomer? escHtml(billingCustomer.name) : 'Walk-in Customer (tap to change)'}
+      </div>
+    </div>
+  </div>
+  <div class="searchbar">
+    <input type="text" id="billSearch" placeholder="Search products to add..." oninput="renderBillProductList(this.value)">
+  </div>
+  <div id="billProductResults"></div>
+  <div class="sectionTitle">Cart (${CART.length})</div>
+  <div id="cartArea">
+    ${CART.length? CART.map(ci=>cartRowHTML(ci)).join('') : `<div class="empty" style="padding:24px;"><div class="bigic">🛒</div>Cart is empty. Search & add products above.</div>`}
+  </div>
+  <div class="totalsbox">
+    <div class="trow grand"><span>Total</span><span>${fmt(total)}</span></div>
+  </div>
+  <div class="field"><label>Amount Received (${SETTINGS.currency})</label><input type="number" id="f_received" placeholder="0" oninput="updateBalancePreview(${total})"></div>
+  <div id="balancePreview" style="font-size:13px;font-weight:700;margin-bottom:10px;"></div>
+  <button class="btn btn-primary btn-block" onclick="saveInvoice(${total})" ${CART.length?'':'disabled'}>💾 Save & Generate Invoice</button>
+  `;
+}
+function updateBalancePreview(total){
+  const rec=parseFloat(document.getElementById('f_received').value)||0;
+  const bal=total-rec;
+  const el=document.getElementById('balancePreview');
+  if(bal<=0)el.innerHTML=`<span style="color:var(--success);">✓ Fully Paid</span>`;
+  else if(rec>0)el.innerHTML=`<span style="color:var(--warning);">Balance Due: ${fmt(bal)} (Partial)</span>`;
+  else el.innerHTML=`<span style="color:var(--danger);">Full amount as Udhar: ${fmt(bal)}</span>`;
+}
+function cartRowHTML(ci){
+  return `<div class="cartrow">
+    <div class="ci"><div class="cn">${escHtml(ci.name)}</div><div class="cp">${fmt(ci.price)} × ${ci.qty} = ${fmt(ci.price*ci.qty)}</div></div>
+    <div class="stepper">
+      <button onclick="changeCartQty('${ci.productId}',-1)">−</button>
+      <span>${ci.qty}</span>
+      <button onclick="changeCartQty('${ci.productId}',1)">+</button>
+    </div>
+  </div>`;
+}
+function renderBillProductList(q){
+  const box=document.getElementById('billProductResults');
+  if(!q){box.innerHTML=''; return;}
+  const matches=PRODUCTS.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  box.innerHTML = matches.length? matches.map(p=>`
+    <div class="listrow" onclick="addToCart('${p.id}')">
+      <div><div class="l1">${escHtml(p.name)}</div><div class="l2">${fmt(p.price)} · Stock: ${p.stock} ${p.unit||''}</div></div>
+      <div style="font-size:20px;color:var(--accent);">+</div>
+    </div>`).join('') : `<div class="empty" style="padding:16px;">No product found</div>`;
+}
+function addToCart(id){
+  const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  const existing=CART.find(c=>c.productId===id);
+  if(existing)existing.qty+=1;
+  else CART.push({productId:id, name:p.name, price:p.price, qty:1});
+  document.getElementById('billSearch').value=''; document.getElementById('billProductResults').innerHTML='';
+  renderInto('newbill');
+}
+function changeCartQty(id,delta){
+  const item=CART.find(c=>c.productId===id); if(!item)return;
+  item.qty+=delta;
+  if(item.qty<=0)CART=CART.filter(c=>c.productId!==id);
+  renderInto('newbill');
+}
+function pickCustomerSheet(){
+  openSheet(`
+  <h3>Select Customer</h3>
+  <div class="field"><input type="text" placeholder="Search customer..." oninput="filterCustPick(this.value)"></div>
+  <div id="custPickList">
+    <div class="actionsheet-item" onclick="selectBillingCustomer(null)"><span class="ic">🚶</span>Walk-in Customer</div>
+    ${CUSTOMERS.map(c=>`<div class="actionsheet-item" onclick='selectBillingCustomer(${JSON.stringify({id:c.id,name:c.name})})'><span class="ic">👤</span>${escHtml(c.name)} <span style="color:var(--muted);font-weight:500;font-size:12px;">${c.phone||''}</span></div>`).join('')}
+  </div>
+  <button class="btn btn-outline btn-block" style="margin-top:10px;" onclick="closeSheet(); openCustomerForm(null,true);">➕ Add New Customer</button>
+  `);
+}
+function filterCustPick(q){
+  const list=CUSTOMERS.filter(c=>c.name.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('custPickList').innerHTML = `<div class="actionsheet-item" onclick="selectBillingCustomer(null)"><span class="ic">🚶</span>Walk-in Customer</div>` +
+    list.map(c=>`<div class="actionsheet-item" onclick='selectBillingCustomer(${JSON.stringify({id:c.id,name:c.name})})'><span class="ic">👤</span>${escHtml(c.name)}</div>`).join('');
+}
+function selectBillingCustomer(c){billingCustomer=c; closeSheet(); renderInto('newbill');}
+
+async function saveInvoice(total){
+  if(CART.length===0){toast('Cart is empty'); return;}
+  const received=parseFloat(document.getElementById('f_received').value)||0;
+  const balance=total-received;
+  let status='Udhar';
+  if(balance<=0)status='Paid'; else if(received>0)status='Partial';
+  const invNo=SETTINGS.invoiceCounter||1;
+  const inv={
+    id:uid(), invoiceNo:invNo, date:Date.now(),
+    customerId: billingCustomer? billingCustomer.id : null,
+    customerName: billingCustomer? billingCustomer.name : 'Walk-in Customer',
+    items:[...CART], subtotal:total, total, received, balance, status
+  };
+  await dbPut('invoices',inv);
+  await saveSetting('invoiceCounter', invNo+1);
+  // reduce stock
+  for(const ci of CART){
+    const p=PRODUCTS.find(x=>x.id===ci.productId);
+    if(p){ p.stock = Math.max(0,(p.stock||0)-ci.qty); await dbPut('products',p); }
+  }
+  // update customer due / ledger
+  if(billingCustomer && balance>0){
+    const cust=await dbGet('customers', billingCustomer.id);
+    if(cust){
+      cust.due=(cust.due||0)+balance;
+      cust.ledger=cust.ledger||[];
+      cust.ledger.push({date:Date.now(), type:'invoice', amount:balance, note:'Invoice #'+invNo, invoiceId:inv.id});
+      await dbPut('customers',cust);
+    }
+  }
+  CART=[]; billingCustomer=null;
+  await refreshData();
+  toast('Invoice #'+invNo+' saved ✓');
+  goto('invoicedetail', inv.id, true);
+}
+
+function renderInvoiceDetail(id){
+  const inv=INVOICES.find(i=>i.id===id);
+  if(!inv)return `<div class="empty">Invoice not found</div>`;
+  const stCls = inv.status==='Paid'?'st-paid': inv.status==='Partial'?'st-partial':'st-udhar';
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-weight:800;font-size:16px;">#${inv.invoiceNo}</div><div style="font-size:12px;color:var(--muted);">${fmtDateTime(inv.date)}</div></div>
+      <span class="statuschip ${stCls}">${inv.status}</span>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:13.5px;"><b>${escHtml(inv.customerName)}</b></div>
+    <div class="divider"></div>
+    ${inv.items.map(it=>`<div class="trow"><span>${escHtml(it.name)} × ${it.qty}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
+    <div class="divider"></div>
+    <div class="trow"><span>Subtotal</span><span>${fmt(inv.subtotal)}</span></div>
+    <div class="trow grand"><span>Total</span><span>${fmt(inv.total)}</span></div>
+    <div class="trow"><span>Received</span><span>${fmt(inv.received)}</span></div>
+    <div class="trow"><span>Balance Due</span><span style="color:${inv.balance>0?'var(--danger)':'var(--success)'};font-weight:800;">${fmt(inv.balance)}</span></div>
+  </div>
+  ${inv.balance>0? `<button class="btn btn-success btn-block" style="margin-bottom:10px;" onclick="recordInvoicePayment('${inv.id}')">💵 Record Payment</button>`:''}
+  <div class="quickrow">
+    <button class="qbtn" style="background:var(--teal)" onclick="shareInvoicePDF('${inv.id}')"><span class="ic">📤</span>Share PDF</button>
+    <button class="qbtn" style="background:var(--primary)" onclick="printInvoiceBluetooth('${inv.id}')"><span class="ic">🖨️</span>BT Print</button>
+    <button class="qbtn" style="background:var(--accent)" onclick="printInvoiceSystem('${inv.id}')"><span class="ic">🖨️</span>Print</button>
+  </div>
+  `;
+}
+async function recordInvoicePayment(invId){
+  const inv=INVOICES.find(i=>i.id===invId);
+  openSheet(`<h3>Record Payment</h3>
+  <div class="field"><label>Amount Received (${SETTINGS.currency})</label><input type="number" id="payAmt" placeholder="${inv.balance}"></div>
+  <button class="btn btn-primary btn-block" onclick="confirmPayment('${invId}')">Save Payment</button>`);
+}
+async function confirmPayment(invId){
+  const amt=parseFloat(document.getElementById('payAmt').value)||0;
+  if(amt<=0){toast('Enter valid amount'); return;}
+  const inv=await dbGet('invoices',invId);
+  inv.received=(inv.received||0)+amt;
+  inv.balance=Math.max(0,inv.total-inv.received);
+  inv.status = inv.balance<=0? 'Paid' : (inv.received>0? 'Partial':'Udhar');
+  await dbPut('invoices',inv);
+  if(inv.customerId){
+    const cust=await dbGet('customers',inv.customerId);
+    if(cust){
+      cust.due=Math.max(0,(cust.due||0)-amt);
+      cust.ledger=cust.ledger||[];
+      cust.ledger.push({date:Date.now(), type:'payment', amount:-amt, note:'Payment for Invoice #'+inv.invoiceNo});
+      await dbPut('customers',cust);
+    }
+  }
+  await refreshData(); closeSheet(); toast('Payment recorded ✓'); renderInto('invoicedetail',invId);
+}
+
+/* ================= CUSTOMERS ================= */
+function renderCustomers(){
+  const list=[...CUSTOMERS].sort((a,b)=>(b.due||0)-(a.due||0));
+  return `
+  <button class="btn btn-primary btn-block" onclick="openCustomerForm()">➕ Add Customer</button>
+  <div class="sectionTitle">All Customers (${list.length})</div>
+  ${list.length? list.map(c=>`
+    <div class="listrow" onclick="goto('customerdetail','${c.id}')">
+      <div><div class="l1">${escHtml(c.name)}</div><div class="l2">${c.phone||'No phone'}</div></div>
+      <div style="text-align:right;">${c.due>0? `<div class="l1" style="color:var(--danger);">${fmt(c.due)}</div><div class="l2">Due</div>` : `<span class="badge badge-ok">No Due</span>`}</div>
+    </div>`).join('') : `<div class="empty"><div class="bigic">👥</div>No customers yet.</div>`}
+  `;
+}
+function openCustomerForm(id,thenGoBilling){
+  const c=id? CUSTOMERS.find(x=>x.id===id) : {id:uid(),name:'',phone:'',address:''};
+  openSheet(`
+  <h3>${id?'Edit Customer':'Add Customer'}</h3>
+  <div class="field"><label>Name *</label><input id="c_name" value="${escAttr(c.name)}" placeholder="Customer / Shop name"></div>
+  <div class="field"><label>Phone</label><input id="c_phone" value="${escAttr(c.phone||'')}" placeholder="10-digit number" type="tel"></div>
+  <div class="field"><label>Address</label><textarea id="c_addr" rows="2" placeholder="Optional">${escAttr(c.address||'')}</textarea></div>
+  <button class="btn btn-primary btn-block" onclick="saveCustomer('${c.id}',${!!id},${!!thenGoBilling})">Save Customer</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>
+  `);
+}
+async function saveCustomer(id,isEdit,thenGoBilling){
+  const name=document.getElementById('c_name').value.trim();
+  if(!name){toast('Enter customer name'); return;}
+  const existing = isEdit? CUSTOMERS.find(x=>x.id===id) : {due:0, ledger:[], createdAt:Date.now()};
+  const cust={...existing, id, name, phone:document.getElementById('c_phone').value.trim(), address:document.getElementById('c_addr').value.trim()};
+  await dbPut('customers',cust);
+  await refreshData();
+  closeSheet(); toast('Customer saved ✓');
+  if(thenGoBilling){ billingCustomer={id:cust.id,name:cust.name}; renderInto('newbill'); }
+  else renderInto(history[history.length-1].screen);
+}
+function renderCustomerDetail(id){
+  const c=CUSTOMERS.find(x=>x.id===id);
+  if(!c)return `<div class="empty">Customer not found</div>`;
+  const ledger=[...(c.ledger||[])].sort((a,b)=>b.date-a.date);
+  return `
+  <div class="card">
+    <div style="font-weight:800;font-size:17px;">${escHtml(c.name)}</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px;">${c.phone||'No phone'}</div>
+    ${c.address? `<div style="font-size:12.5px;color:var(--muted);margin-top:4px;">${escHtml(c.address)}</div>`:''}
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;font-weight:700;">Total Udhar Due</span>
+      <span style="font-size:19px;font-weight:800;color:${c.due>0?'var(--danger)':'var(--success)'};">${fmt(c.due||0)}</span>
+    </div>
+  </div>
+  <div class="quickrow">
+    <button class="qbtn" style="background:var(--accent)" onclick="goto('newbill'); billingCustomer={id:'${c.id}',name:'${escAttr(c.name)}'};"><span class="ic">🧾</span>New Bill</button>
+    ${c.due>0? `<button class="qbtn" style="background:var(--success)" onclick="recordCustomerPayment('${c.id}')"><span class="ic">💵</span>Payment</button>`:''}
+    <button class="qbtn" style="background:var(--teal)" onclick="sendCatalogToCustomer('${c.id}')"><span class="ic">📤</span>Send Catalog</button>
+    <button class="qbtn" style="background:var(--primary)" onclick="openCustomerForm('${c.id}')"><span class="ic">✏️</span>Edit</button>
+  </div>
+  <div class="sectionTitle">Transaction History</div>
+  <div class="card">
+    ${ledger.length? ledger.map(l=>`<div class="ledgerrow"><span>${l.type==='payment'?'💵 ':'🧾 '}${escHtml(l.note)}<br><span style="color:var(--muted);font-size:11px;">${fmtDate(l.date)}</span></span><span style="font-weight:800;color:${l.amount>0?'var(--danger)':'var(--success)'};">${l.amount>0?'+':''}${fmt(l.amount)}</span></div>`).join('') : `<div style="text-align:center;color:var(--muted);padding:10px;">No transactions yet</div>`}
+  </div>
+  `;
+}
+async function recordCustomerPayment(custId){
+  openSheet(`<h3>Record Payment</h3>
+  <div class="field"><label>Amount Received (${SETTINGS.currency})</label><input type="number" id="cpayAmt" placeholder="0"></div>
+  <button class="btn btn-primary btn-block" onclick="confirmCustomerPayment('${custId}')">Save Payment</button>`);
+}
+async function confirmCustomerPayment(custId){
+  const amt=parseFloat(document.getElementById('cpayAmt').value)||0;
+  if(amt<=0){toast('Enter valid amount'); return;}
+  const cust=await dbGet('customers',custId);
+  cust.due=Math.max(0,(cust.due||0)-amt);
+  cust.ledger=cust.ledger||[];
+  cust.ledger.push({date:Date.now(), type:'payment', amount:-amt, note:'Cash payment received'});
+  await dbPut('customers',cust);
+  await refreshData(); closeSheet(); toast('Payment recorded ✓'); renderInto('customerdetail',custId);
+}
+async function sendCatalogToCustomer(custId){
+  selectedIds=new Set(PRODUCTS.map(p=>p.id));
+  await shareCatalogPDF([...selectedIds]);
+}
+
+/* ================= REPORTS ================= */
+let reportRange='today';
+function renderReports(){
+  const now=new Date();
+  let from;
+  if(reportRange==='today'){from=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();}
+  else if(reportRange==='week'){from=now.getTime()-7*86400000;}
+  else {from=new Date(now.getFullYear(),now.getMonth(),1).getTime();}
+  const inRange=INVOICES.filter(i=>i.date>=from);
+  const totalSales=inRange.reduce((s,i)=>s+i.total,0);
+  const totalCollected=inRange.reduce((s,i)=>s+i.received,0);
+  const totalUdhar=inRange.reduce((s,i)=>s+i.balance,0);
+  const stockValue=PRODUCTS.reduce((s,p)=>s+p.price*p.stock,0);
+  const lowStock=PRODUCTS.filter(p=>p.stock>0 && p.stock<=(p.lowStock||5));
+  const outStock=PRODUCTS.filter(p=>p.stock<=0);
+  return `
+  <div class="chiprow">
+    <div class="chip ${reportRange==='today'?'active':''}" onclick="reportRange='today';renderInto('reports')">Today</div>
+    <div class="chip ${reportRange==='week'?'active':''}" onclick="reportRange='week';renderInto('reports')">This Week</div>
+    <div class="chip ${reportRange==='month'?'active':''}" onclick="reportRange='month';renderInto('reports')">This Month</div>
+  </div>
+  <div class="statgrid">
+    <div class="statcard sc1"><span class="ic">💰</span><div class="lbl">Total Sales</div><div class="val">${fmt(totalSales)}</div></div>
+    <div class="statcard sc4"><span class="ic">✅</span><div class="lbl">Collected</div><div class="val">${fmt(totalCollected)}</div></div>
+    <div class="statcard sc2"><span class="ic">🤝</span><div class="lbl">Udhar Given</div><div class="val">${fmt(totalUdhar)}</div></div>
+    <div class="statcard sc3"><span class="ic">🧾</span><div class="lbl">Invoices</div><div class="val">${inRange.length}</div></div>
+  </div>
+  <div class="sectionTitle">Stock Overview</div>
+  <div class="card">
+    <div class="trow"><span>Total Stock Value</span><span style="font-weight:800;">${fmt(stockValue)}</span></div>
+    <div class="trow"><span>Low Stock Items</span><span style="font-weight:800;color:var(--warning);">${lowStock.length}</span></div>
+    <div class="trow"><span>Out of Stock Items</span><span style="font-weight:800;color:var(--danger);">${outStock.length}</span></div>
+  </div>
+  ${lowStock.length? `<div class="sectionTitle">⚠️ Low Stock</div>` + lowStock.map(p=>`<div class="listrow" style="cursor:default;"><div class="l1">${escHtml(p.name)}</div><span class="badge badge-low">${p.stock} ${p.unit||'pcs'} left</span></div>`).join(''):''}
+  <div class="sectionTitle">Invoices in Range</div>
+  ${inRange.length? [...inRange].sort((a,b)=>b.date-a.date).map(invoiceRowHTML).join('') : `<div class="empty">No invoices in this range</div>`}
+  `;
+}
+
+/* ================= SETTINGS ================= */
+function renderSettings(){
+  return `
+  <div class="sectionTitle">Shop Details</div>
+  <div class="card">
+    <label class="imgupload" id="logoBox" style="height:90px;">
+      ${SETTINGS.logo? `<img src="${SETTINGS.logo}">` : `<div class="icbig">🏪</div>Shop Logo (optional)`}
+      <input type="file" accept="image/*" style="display:none" onchange="handleLogoSelect(event)">
+    </label>
+    <div class="field"><label>Shop Name</label><input id="s_name" value="${escAttr(SETTINGS.shopName)}"></div>
+    <div class="field"><label>Phone</label><input id="s_phone" value="${escAttr(SETTINGS.phone||'')}"></div>
+    <div class="field"><label>Address</label><textarea id="s_addr" rows="2">${escAttr(SETTINGS.address||'')}</textarea></div>
+    <div class="row2">
+      <div class="field"><label>GST No. (optional)</label><input id="s_gst" value="${escAttr(SETTINGS.gst||'')}"></div>
+      <div class="field"><label>Currency Symbol</label><input id="s_cur" value="${escAttr(SETTINGS.currency)}"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveShopSettings()">Save Shop Details</button>
+  </div>
+
+  <div class="sectionTitle">Install App</div>
+  <div class="card">
+    <div class="miniNote" id="installNote">Install MobiStock as a real app icon on your phone or computer — opens full-screen, works offline, no browser bar.</div>
+    <div class="quickrow">
+      <button class="qbtn" style="background:var(--success)" onclick="installApp()"><span class="ic">📱</span>Install Android App</button>
+      <button class="qbtn" style="background:var(--primary)" onclick="installApp()"><span class="ic">💻</span>Install Desktop App</button>
+    </div>
+  </div>
+
+  <div class="sectionTitle">Bluetooth Printer</div>
+  <div class="card">
+    <div class="miniNote">Works with most common ESC/POS thermal receipt printers. If it doesn't connect, use "Print" (system dialog) or "Share PDF" instead on any invoice.</div>
+    <div style="font-size:13px;margin-bottom:10px;">Status: <b id="btStatus">${btDevice? 'Connected: '+btDevice.name : 'Not connected'}</b></div>
+    <button class="btn btn-teal btn-block" onclick="connectPrinter()">🔗 Connect Bluetooth Printer</button>
+  </div>
+
+  <div class="sectionTitle">Backup & Restore</div>
+  <div class="card">
+    <div class="miniNote">Your data is stored only on this device. Export a backup regularly so you don't lose it.</div>
+    <button class="btn btn-outline btn-block" onclick="exportBackup()">⬇️ Export Backup (JSON)</button>
+    <label class="btn btn-outline btn-block" style="margin-top:8px;display:block;text-align:center;">
+      ⬆️ Restore from Backup
+      <input type="file" accept=".json" style="display:none" onchange="importBackup(event)">
+    </label>
+    <button class="btn btn-danger btn-block" style="margin-top:8px;" onclick="resetDataConfirm()">🗑️ Reset All Data</button>
+  </div>
+  <div style="text-align:center;color:var(--muted);font-size:11.5px;margin-top:16px;">MobiStock v1.0 · Works fully offline</div>
+  `;
+}
+async function handleLogoSelect(e){
+  const file=e.target.files[0]; if(!file)return;
+  const dataUrl=await compressImage(file,300,0.75);
+  await saveSetting('logo',dataUrl);
+  toast('Logo updated'); renderInto('settings');
+}
+async function saveShopSettings(){
+  await saveSetting('shopName',document.getElementById('s_name').value.trim()||'My Shop');
+  await saveSetting('phone',document.getElementById('s_phone').value.trim());
+  await saveSetting('address',document.getElementById('s_addr').value.trim());
+  await saveSetting('gst',document.getElementById('s_gst').value.trim());
+  await saveSetting('currency',document.getElementById('s_cur').value.trim()||'₹');
+  toast('Shop details saved ✓'); render();
+}
+async function exportBackup(){
+  const data={products:PRODUCTS, customers:CUSTOMERS, invoices:INVOICES, settings:SETTINGS, exportedAt:Date.now()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='MobiStock_Backup_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  toast('Backup downloaded ✓');
+}
+async function importBackup(e){
+  const file=e.target.files[0]; if(!file)return;
+  const text=await file.text();
+  try{
+    const data=JSON.parse(text);
+    for(const p of (data.products||[]))await dbPut('products',p);
+    for(const c of (data.customers||[]))await dbPut('customers',c);
+    for(const i of (data.invoices||[]))await dbPut('invoices',i);
+    if(data.settings){for(const k in data.settings){await saveSetting(k,data.settings[k]);}}
+    await refreshData(); await loadSettings();
+    toast('Backup restored ✓'); render();
+  }catch(err){toast('Invalid backup file');}
+}
+function resetDataConfirm(){
+  openSheet(`<h3>Reset All Data?</h3><p style="color:var(--danger);font-size:13.5px;font-weight:700;">This will permanently delete all products, customers and invoices on this device. This cannot be undone.</p>
+  <button class="btn btn-danger btn-block" onclick="resetAllData()">Yes, Delete Everything</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`);
+}
+async function resetAllData(){
+  for(const store of ['products','customers','invoices']){
+    const rows=await dbGetAll(store);
+    for(const r of rows)await dbDelete(store,r.id);
+  }
+  await refreshData(); closeSheet(); toast('All data cleared'); goto('dashboard',null,true);
+}
+
+/* ================= BLUETOOTH PRINTING ================= */
+let btDevice=null, btChar=null;
+const PRINTER_PROFILES=[
+  {service:'000018f0-0000-1000-8000-00805f9b34fb', char:'00002af1-0000-1000-8000-00805f9b34fb'},
+  {service:'0000ff00-0000-1000-8000-00805f9b34fb', char:'0000ff02-0000-1000-8000-00805f9b34fb'},
+  {service:'49535343-fe7d-4ae5-8fa9-9fafd205e455', char:'49535343-8841-43f4-a8d4-ecbe34729bb3'},
+];
+async function connectPrinter(){
+  if(!navigator.bluetooth){toast('Bluetooth not supported in this browser'); return;}
+  try{
+    btDevice=await navigator.bluetooth.requestDevice({acceptAllDevices:true, optionalServices:PRINTER_PROFILES.map(p=>p.service)});
+    const server=await btDevice.gatt.connect();
+    let found=false;
+    for(const prof of PRINTER_PROFILES){
+      try{
+        const service=await server.getPrimaryService(prof.service);
+        const ch=await service.getCharacteristic(prof.char);
+        btChar=ch; found=true; break;
+      }catch(e){}
+    }
+    if(!found){toast('Connected, but printer profile not recognized. Try "Print" (system dialog) instead.');}
+    else toast('Printer connected: '+btDevice.name);
+    render();
+  }catch(e){toast('Could not connect: '+(e.message||'try again'));}
+}
+async function btWrite(bytes){
+  const chunk=180;
+  for(let i=0;i<bytes.length;i+=chunk){
+    await btChar.writeValue(bytes.slice(i,i+chunk));
+    await new Promise(r=>setTimeout(r,40));
+  }
+}
+function buildReceiptText(inv){
+  let l=[];
+  l.push(center(SETTINGS.shopName||'MY SHOP'));
+  if(SETTINGS.phone)l.push(center(SETTINGS.phone));
+  l.push('--------------------------------');
+  l.push('Invoice #'+inv.invoiceNo);
+  l.push(new Date(inv.date).toLocaleString('en-IN'));
+  l.push('Customer: '+(inv.customerName||'Walk-in'));
+  l.push('--------------------------------');
+  inv.items.forEach(it=>{
+    l.push(it.name.substring(0,20));
+    l.push(`  ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`);
+  });
+  l.push('--------------------------------');
+  l.push('TOTAL: Rs.'+inv.total.toFixed(2));
+  l.push('Received: Rs.'+inv.received.toFixed(2));
+  l.push('Balance: Rs.'+inv.balance.toFixed(2));
+  l.push('--------------------------------');
+  l.push(center('Thank you! Visit again'));
+  l.push(''); l.push(''); l.push('');
+  return l.join('\n');
+}
+function center(s){const w=32; const pad=Math.max(0,Math.floor((w-s.length)/2)); return ' '.repeat(pad)+s;}
+async function printInvoiceBluetooth(id){
+  if(!btChar){toast('Connect a Bluetooth printer first in Settings'); return;}
+  const inv=INVOICES.find(i=>i.id===id);
+  const text=buildReceiptText(inv);
+  const bytes=new TextEncoder().encode('\x1B\x40'+text+'\n\n\n');
+  try{ await btWrite(bytes); toast('Printing...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
+}
+
+/* ================= SYSTEM PRINT ================= */
+function printInvoiceSystem(id){
+  const inv=INVOICES.find(i=>i.id===id);
+  const html=`
+  <div class="printable">
+    <h2>${escHtml(SETTINGS.shopName||'My Shop')}</h2>
+    <div>${escHtml(SETTINGS.phone||'')}</div>
+    <div>${escHtml(SETTINGS.address||'')}</div>
+    <hr>
+    <div>Invoice #${inv.invoiceNo} &nbsp; ${fmtDateTime(inv.date)}</div>
+    <div>Customer: ${escHtml(inv.customerName)}</div>
+    <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amt</th></tr></thead>
+    <tbody>${inv.items.map(it=>`<tr><td>${escHtml(it.name)}</td><td>${it.qty}</td><td>${it.price}</td><td>${(it.qty*it.price).toFixed(2)}</td></tr>`).join('')}</tbody></table>
+    <hr>
+    <div><b>Total: ${fmt(inv.total)}</b></div>
+    <div>Received: ${fmt(inv.received)}</div>
+    <div>Balance: ${fmt(inv.balance)}</div>
+  </div>`;
+  document.getElementById('printArea').innerHTML=html;
+  window.print();
+}
+
+/* ================= PDF INVOICE SHARE ================= */
+async function shareInvoicePDF(id){
+  const inv=INVOICES.find(i=>i.id===id);
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.setFontSize(16); doc.setTextColor(91,33,182);
+  doc.text(SETTINGS.shopName||'My Shop', 14, 16);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text(SETTINGS.phone||'', 14, 22);
+  doc.text(SETTINGS.address||'', 14, 27);
+  doc.setFontSize(11); doc.setTextColor(30,20,50);
+  doc.text('Invoice #'+inv.invoiceNo, 14, 38);
+  doc.text(new Date(inv.date).toLocaleString('en-IN'), 120, 38);
+  doc.text('Customer: '+(inv.customerName||'Walk-in'), 14, 45);
+  let y=56;
+  doc.setFontSize(10); doc.setTextColor(90,90,90);
+  doc.text('Item', 14, y); doc.text('Qty', 120, y); doc.text('Rate', 145, y); doc.text('Amount', 170, y);
+  y+=4; doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y+=6;
+  doc.setTextColor(30,20,50);
+  inv.items.forEach(it=>{
+    doc.text(it.name.substring(0,45), 14, y); doc.text(String(it.qty), 120, y);
+    doc.text(String(it.price), 145, y); doc.text((it.qty*it.price).toFixed(2), 170, y);
+    y+=7;
+  });
+  y+=3; doc.line(14,y,196,y); y+=8;
+  doc.setFontSize(12); doc.setTextColor(91,33,182);
+  doc.text('Total: '+SETTINGS.currency+inv.total.toFixed(2), 140, y); y+=7;
+  doc.setFontSize(10); doc.setTextColor(90,90,90);
+  doc.text('Received: '+SETTINGS.currency+inv.received.toFixed(2), 140, y); y+=6;
+  doc.text('Balance Due: '+SETTINGS.currency+inv.balance.toFixed(2), 140, y);
+  const blob=doc.output('blob');
+  const file=new File([blob],'Invoice_'+inv.invoiceNo+'.pdf',{type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'Invoice #'+inv.invoiceNo, text:'Invoice from '+(SETTINGS.shopName||'My Shop')}); return; }catch(e){}
+  }
+  doc.save(file.name);
+  toast('PDF downloaded — share via WhatsApp manually');
+}
+
+/* ================= UTIL / RENDER SHORTCUT ================= */
+function renderInto(screen,param){
+  // re-render current top-of-stack in place (used after inline state edits)
+  const cur=history[history.length-1];
+  if(cur.screen===screen){ if(param!==undefined)cur.param=param; }
+  render();
+}
+function escHtml(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escAttr(s){return escHtml(s);}
+
+/* ================= INIT ================= */
+(async function init(){
+  await openDB();
+  await loadSettings();
+  await refreshData();
+  render();
+})();
+
+/* ================= PWA SERVICE WORKER ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+/* ================= PWA INSTALL (Android + Desktop) ================= */
+let deferredInstallPrompt=null;
+let appAlreadyInstalled = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const note=document.getElementById('installNote');
+  if(note)note.textContent='Ready to install — tap a button below to add MobiStock as an app icon.';
+});
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null; appAlreadyInstalled=true;
+  toast('App installed successfully ✓');
+});
+async function installApp(){
+  if(appAlreadyInstalled){toast("You're already using the installed app ✓"); return;}
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    const choice=await deferredInstallPrompt.userChoice;
+    if(choice.outcome==='accepted')toast('Installing MobiStock...');
+    deferredInstallPrompt=null;
+    return;
+  }
+  if(location.protocol==='file:'){
+    toast('Please host this app online first (see README.txt), then open it in Chrome to install.');
+    return;
+  }
+  toast('If using Chrome: tap menu (⋮) → "Install app" / "Add to Home screen" to install.');
+}
+</script>
+</body>
+</html>
