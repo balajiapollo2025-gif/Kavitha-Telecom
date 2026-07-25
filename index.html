@@ -215,7 +215,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -238,7 +238,7 @@ function dbGet(store,key){return new Promise((res,rej)=>{const tx=db.transaction
 function dbPut(store,val){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).put(val);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 function dbDelete(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).delete(key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
 
-let SETTINGS={shopName:'KAVITHA TELECOM', phone:'89390 00833 / 90436 65107', address:'Shop No.34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002', gst:'', currency:'₹', logo:'', invoiceCounter:1, cutCommand:'GSVB0', autoBackupEnabled:true};
+let SETTINGS={shopName:'KAVITHA TELECOM', phone:'89390 00833 / 90436 65107', address:'Shop No.34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002', gst:'', currency:'₹', logo:'', invoiceCounter:1, cutCommand:'GSVB0', autoBackupEnabled:true, paperWidth:32};
 async function loadSettings(){
   const rows=await dbGetAll('settings');
   rows.forEach(r=>{SETTINGS[r.key]=r.value;});
@@ -1051,7 +1051,14 @@ function renderSettings(){
     <div class="miniNote">Works with most common ESC/POS thermal receipt printers. If it doesn't connect, use "Print" (system dialog) or "Share PDF" instead on any invoice.</div>
     <div style="font-size:13px;margin-bottom:10px;">Status: <b id="btStatus">${btDevice? 'Connected: '+btDevice.name : 'Not connected'}</b></div>
     <button class="btn btn-teal btn-block" onclick="connectPrinter()">🔗 Connect Bluetooth Printer</button>
-    <div class="field" style="margin-top:12px;"><label>Paper Cut Command (change only if paper isn't cutting)</label>
+    <div class="field" style="margin-top:12px;"><label>Paper Width (fixes off-center printing)</label>
+      <select id="s_paperwidth" onchange="saveSetting('paperWidth',parseInt(this.value))">
+        <option value="32" ${(SETTINGS.paperWidth||32)===32?'selected':''}>58mm printer (32 characters)</option>
+        <option value="42" ${SETTINGS.paperWidth===42?'selected':''}>80mm printer (42 characters)</option>
+        <option value="48" ${SETTINGS.paperWidth===48?'selected':''}>80mm printer, small font (48 characters)</option>
+      </select>
+    </div>
+    <div class="field"><label>Paper Cut Command (change only if paper isn't cutting)</label>
       <select id="s_cutcmd" onchange="saveSetting('cutCommand',this.value)">
         <option value="GSVB0" ${SETTINGS.cutCommand==='GSVB0'?'selected':''}>Default (GS V B 0)</option>
         <option value="GSV0" ${SETTINGS.cutCommand==='GSV0'?'selected':''}>Option 2 (GS V 0)</option>
@@ -1228,29 +1235,31 @@ async function btWrite(bytes){
     await new Promise(r=>setTimeout(r,40));
   }
 }
-function buildReceiptText(inv){
-  let l=[];
-  l.push(center(SETTINGS.shopName||'MY SHOP'));
-  if(SETTINGS.address) wrapText(SETTINGS.address,32).forEach(ln=>l.push(center(ln)));
-  if(SETTINGS.phone)l.push(center(SETTINGS.phone));
-  l.push('--------------------------------');
-  l.push('Invoice #'+inv.invoiceNo);
-  l.push(new Date(inv.date).toLocaleString('en-IN'));
-  l.push('Customer: '+(inv.customerName||'Walk-in'));
-  l.push('--------------------------------');
+function buildReceiptLines(inv){
+  const W=SETTINGS.paperWidth||32;
+  let lines=[];
+  lines.push({text:center(SETTINGS.shopName||'MY SHOP',W), bold:true});
+  if(SETTINGS.address) wrapText(SETTINGS.address,W).forEach(ln=>lines.push({text:center(ln,W)}));
+  if(SETTINGS.phone)lines.push({text:center(SETTINGS.phone,W)});
+  lines.push({text:'-'.repeat(W)});
+  lines.push({text:'Invoice #'+inv.invoiceNo});
+  lines.push({text:new Date(inv.date).toLocaleString('en-IN')});
+  lines.push({text:'Customer: '+(inv.customerName||'Walk-in')});
+  lines.push({text:'-'.repeat(W)});
   inv.items.forEach(it=>{
-    l.push(it.name.substring(0,20));
-    l.push(`  ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`);
+    lines.push({text:it.name.substring(0,W-2)});
+    lines.push({text:`  ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`});
   });
-  l.push('--------------------------------');
-  l.push('Subtotal: Rs.'+inv.subtotal.toFixed(2));
-  l.push('TOTAL: Rs.'+inv.total.toFixed(2));
-  l.push('Received: Rs.'+inv.received.toFixed(2));
-  l.push('Balance: Rs.'+inv.balance.toFixed(2));
-  l.push('--------------------------------');
-  l.push(center('Thank you! Visit again'));
-  l.push(''); l.push(''); l.push('');
-  return l.join('\n');
+  lines.push({text:'-'.repeat(W)});
+  lines.push({text:'Subtotal: Rs.'+inv.subtotal.toFixed(2)});
+  lines.push({text:'+'+'-'.repeat(W-2)+'+'});
+  lines.push({text:center('TOTAL: Rs.'+inv.total.toFixed(2),W), bold:true, tall:true});
+  lines.push({text:'+'+'-'.repeat(W-2)+'+'});
+  lines.push({text:'Received: Rs.'+inv.received.toFixed(2)});
+  lines.push({text:'Balance: Rs.'+inv.balance.toFixed(2)});
+  lines.push({text:'-'.repeat(W)});
+  lines.push({text:center('Thank you! Visit again',W)});
+  return lines;
 }
 function wrapText(s,width){
   const words=(s||'').split(/\s+/); let lines=[]; let cur='';
@@ -1261,7 +1270,7 @@ function wrapText(s,width){
   if(cur)lines.push(cur.trim());
   return lines;
 }
-function center(s){const w=32; const pad=Math.max(0,Math.floor((w-s.length)/2)); return ' '.repeat(pad)+s;}
+function center(s,w){ w=w||SETTINGS.paperWidth||32; const pad=Math.max(0,Math.floor((w-s.length)/2)); return ' '.repeat(pad)+s; }
 const CUT_COMMANDS={
   'GSVB0':[0x1D,0x56,0x42,0x00],
   'GSV0':[0x1D,0x56,0x00],
@@ -1269,35 +1278,47 @@ const CUT_COMMANDS={
   'ESCi':[0x1B,0x69],
   'ESCm':[0x1B,0x6D],
 };
-function buildEscposBytes(text){
+function buildEscposReceipt(lines){
   const encoder=new TextEncoder();
-  const init=new Uint8Array([0x1B,0x40]); // ESC @  (initialize printer)
-  const body=encoder.encode(text+'\n\n\n');
+  const parts=[new Uint8Array([0x1B,0x40])]; // ESC @ initialize
+  lines.forEach(ln=>{
+    if(ln.bold) parts.push(new Uint8Array([0x1B,0x45,0x01])); // bold ON
+    parts.push(new Uint8Array([0x1D,0x21, ln.tall?0x01:0x00])); // double-height on/off
+    parts.push(encoder.encode(ln.text+'\n'));
+    parts.push(new Uint8Array([0x1D,0x21,0x00])); // size reset
+    if(ln.bold) parts.push(new Uint8Array([0x1B,0x45,0x00])); // bold OFF
+  });
+  parts.push(encoder.encode('\n\n\n'));
   const cutCode=CUT_COMMANDS[SETTINGS.cutCommand]||CUT_COMMANDS['GSVB0'];
-  const cut=new Uint8Array(cutCode);
-  const out=new Uint8Array(init.length+body.length+cut.length);
-  out.set(init,0); out.set(body,init.length); out.set(cut, init.length+body.length);
+  parts.push(new Uint8Array(cutCode));
+  let total=0; parts.forEach(p=>total+=p.length);
+  const out=new Uint8Array(total); let off=0;
+  parts.forEach(p=>{ out.set(p,off); off+=p.length; });
   return out;
 }
 async function printInvoiceBluetooth(id){
   if(!btChar){toast('Connect a Bluetooth printer first in Settings'); return;}
   const inv=INVOICES.find(i=>i.id===id);
-  const text=buildReceiptText(inv);
-  const bytes=buildEscposBytes(text);
+  const lines=buildReceiptLines(inv);
+  const bytes=buildEscposReceipt(lines);
   try{ await btWrite(bytes); toast('Printing & cutting...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
 }
 async function testPrint(){
   if(!btChar){toast('Connect a Bluetooth printer first'); return;}
-  let lines=[center(SETTINGS.shopName||'MY SHOP')];
-  if(SETTINGS.address) wrapText(SETTINGS.address,32).forEach(ln=>lines.push(center(ln)));
-  if(SETTINGS.phone)lines.push(center(SETTINGS.phone));
-  lines.push('--------------------------------');
-  lines.push(center('TEST PRINT'));
-  lines.push('--------------------------------');
-  lines.push('If you can read this and');
-  lines.push('the paper cuts right below,');
-  lines.push('this cut setting works!');
-  const bytes=buildEscposBytes(lines.join('\n'));
+  const W=SETTINGS.paperWidth||32;
+  let lines=[{text:center(SETTINGS.shopName||'MY SHOP',W), bold:true}];
+  if(SETTINGS.address) wrapText(SETTINGS.address,W).forEach(ln=>lines.push({text:center(ln,W)}));
+  if(SETTINGS.phone)lines.push({text:center(SETTINGS.phone,W)});
+  lines.push({text:'-'.repeat(W)});
+  lines.push({text:center('TEST PRINT',W), bold:true});
+  lines.push({text:'-'.repeat(W)});
+  lines.push({text:'+'+'-'.repeat(W-2)+'+'});
+  lines.push({text:center('Rs.999.00',W), bold:true, tall:true});
+  lines.push({text:'+'+'-'.repeat(W-2)+'+'});
+  lines.push({text:'If the header is centered and'});
+  lines.push({text:'the boxed total looks right,'});
+  lines.push({text:'this setting works!'});
+  const bytes=buildEscposReceipt(lines);
   try{ await btWrite(bytes); toast('Test printing...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
 }
 
