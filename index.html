@@ -215,7 +215,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -250,6 +250,7 @@ let history=[{screen:'dashboard',param:null}];
 let PRODUCTS=[], CUSTOMERS=[], INVOICES=[];
 let CART=[]; // {productId,name,price,qty,stock}
 let billingCustomer=null; // {id,name,phone} or null=walk-in
+let editingInvoiceId=null; // set when editing an existing invoice instead of creating new
 let productFilter='';
 let categoryFilter='All';
 let selectMode=false;
@@ -361,7 +362,7 @@ function renderDashboard(){
     <div class="statcard sc4"><span class="ic">⚠️</span><div class="lbl">Low / Out of Stock</div><div class="val">${lowStock+outStock}</div></div>
   </div>
   <div class="quickrow">
-    <button class="qbtn" style="background:var(--accent)" onclick="goto('newbill')"><span class="ic">🧾</span>New Bill</button>
+    <button class="qbtn" style="background:var(--accent)" onclick="startNewBill()"><span class="ic">🧾</span>New Bill</button>
     <button class="qbtn" style="background:var(--primary)" onclick="openProductForm()"><span class="ic">📦</span>Add Product</button>
     <button class="qbtn" style="background:var(--teal)" onclick="openCustomerForm()"><span class="ic">👤</span>Add Customer</button>
   </div>
@@ -721,14 +722,16 @@ function invoiceRowHTML(inv){
 function renderBillingList(){
   const list=[...INVOICES].sort((a,b)=>b.date-a.date);
   return `
-  <button class="btn btn-accent btn-block" onclick="goto('newbill')">➕ Create New Bill</button>
+  <button class="btn btn-accent btn-block" onclick="startNewBill()">➕ Create New Bill</button>
   <div class="sectionTitle">All Invoices (${list.length})</div>
   ${list.length? list.map(invoiceRowHTML).join(''): `<div class="empty"><div class="bigic">🧾</div>No invoices yet.</div>`}
   `;
 }
 function renderNewBill(){
   const total=CART.reduce((s,i)=>s+i.price*i.qty,0);
+  const isEditing=!!editingInvoiceId;
   return `
+  ${isEditing? `<div class="miniNote" style="background:#FEF3C7;color:#92400E;">✏️ Editing Invoice — stock and customer udhar will be recalculated when you update.</div>`:''}
   <div class="card">
     <label style="font-size:12.5px;font-weight:700;color:var(--muted);">Customer</label>
     <div style="display:flex;gap:8px;margin-top:6px;">
@@ -748,10 +751,23 @@ function renderNewBill(){
   <div class="totalsbox">
     <div class="trow grand"><span>Total</span><span>${fmt(total)}</span></div>
   </div>
-  <div class="field"><label>Amount Received (${SETTINGS.currency})</label><input type="number" id="f_received" placeholder="0" oninput="updateBalancePreview(${total})"></div>
+  <div class="field"><label>Amount Received (${SETTINGS.currency})</label><input type="number" id="f_received" placeholder="0" value="${window.__editReceivedPrefill!==undefined && window.__editReceivedPrefill!==null? window.__editReceivedPrefill : ''}" oninput="updateBalancePreview(${total})"></div>
   <div id="balancePreview" style="font-size:13px;font-weight:700;margin-bottom:10px;"></div>
-  <button class="btn btn-primary btn-block" onclick="saveInvoice(${total})" ${CART.length?'':'disabled'}>💾 Save & Generate Invoice</button>
+  ${isEditing?
+    `<button class="btn btn-primary btn-block" onclick="updateInvoice(${total})" ${CART.length?'':'disabled'}>💾 Update Invoice</button>
+     <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="cancelEditInvoice()">Cancel Edit</button>`
+    : `<button class="btn btn-primary btn-block" onclick="saveInvoice(${total})" ${CART.length?'':'disabled'}>💾 Save & Generate Invoice</button>`}
   `;
+}
+function startNewBill(customer){
+  editingInvoiceId=null; CART=[]; billingCustomer=customer||null;
+  window.__editReceivedPrefill=null;
+  goto('newbill');
+}
+function cancelEditInvoice(){
+  const id=editingInvoiceId;
+  editingInvoiceId=null; CART=[]; billingCustomer=null; window.__editReceivedPrefill=null;
+  if(id) goto('invoicedetail', id, true); else goto('billing', null, true);
 }
 function updateBalancePreview(total){
   const rec=parseFloat(document.getElementById('f_received').value)||0;
@@ -843,10 +859,98 @@ async function saveInvoice(total){
       await dbPut('customers',cust);
     }
   }
-  CART=[]; billingCustomer=null;
+  CART=[]; billingCustomer=null; editingInvoiceId=null; window.__editReceivedPrefill=null;
   await refreshData();
   toast('Invoice #'+invNo+' saved ✓');
   goto('invoicedetail', inv.id, true);
+}
+
+function editInvoice(id){
+  const inv=INVOICES.find(i=>i.id===id);
+  if(!inv){toast('Invoice not found'); return;}
+  editingInvoiceId=id;
+  CART=inv.items.map(it=>({productId:it.productId, name:it.name, price:it.price, qty:it.qty}));
+  billingCustomer=inv.customerId? {id:inv.customerId, name:inv.customerName} : null;
+  window.__editReceivedPrefill=inv.received;
+  goto('newbill');
+}
+async function updateInvoice(total){
+  if(CART.length===0){toast('Cart is empty'); return;}
+  const oldInv=INVOICES.find(i=>i.id===editingInvoiceId);
+  if(!oldInv){toast('Original invoice not found'); return;}
+  const received=parseFloat(document.getElementById('f_received').value)||0;
+  const balance=total-received;
+  let status='Udhar';
+  if(balance<=0)status='Paid'; else if(received>0)status='Partial';
+
+  // Revert old stock deductions
+  for(const ci of oldInv.items){
+    const p=PRODUCTS.find(x=>x.id===ci.productId);
+    if(p){ p.stock=(p.stock||0)+ci.qty; await dbPut('products',p); }
+  }
+  // Revert old customer due contribution from this invoice
+  if(oldInv.customerId && oldInv.balance>0){
+    const cust=await dbGet('customers',oldInv.customerId);
+    if(cust){
+      cust.due=Math.max(0,(cust.due||0)-oldInv.balance);
+      cust.ledger=(cust.ledger||[]).filter(l=>l.invoiceId!==oldInv.id);
+      await dbPut('customers',cust);
+    }
+  }
+
+  const updatedInv={
+    id:oldInv.id, invoiceNo:oldInv.invoiceNo, date:oldInv.date,
+    customerId: billingCustomer? billingCustomer.id : null,
+    customerName: billingCustomer? billingCustomer.name : 'Walk-in Customer',
+    items:[...CART], subtotal:total, total, received, balance, status, editedAt:Date.now()
+  };
+  await dbPut('invoices',updatedInv);
+
+  // Apply new stock deductions
+  for(const ci of CART){
+    const p=PRODUCTS.find(x=>x.id===ci.productId);
+    if(p){ p.stock=Math.max(0,(p.stock||0)-ci.qty); await dbPut('products',p); }
+  }
+  // Apply new customer due
+  if(billingCustomer && balance>0){
+    const cust=await dbGet('customers', billingCustomer.id);
+    if(cust){
+      cust.due=(cust.due||0)+balance;
+      cust.ledger=cust.ledger||[];
+      cust.ledger.push({date:Date.now(), type:'invoice', amount:balance, note:'Invoice #'+updatedInv.invoiceNo+' (edited)', invoiceId:updatedInv.id});
+      await dbPut('customers',cust);
+    }
+  }
+  CART=[]; billingCustomer=null; editingInvoiceId=null; window.__editReceivedPrefill=null;
+  await refreshData();
+  toast('Invoice #'+updatedInv.invoiceNo+' updated ✓');
+  goto('invoicedetail', updatedInv.id, true);
+}
+function deleteInvoiceConfirm(id){
+  openSheet(`<h3>Delete Invoice?</h3><p style="color:var(--muted);font-size:13.5px;">This will restore stock for its items and remove any udhar it added to the customer. This cannot be undone.</p>
+  <button class="btn btn-danger btn-block" onclick="deleteInvoiceApply('${id}')">Yes, Delete Invoice</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`);
+}
+async function deleteInvoiceApply(id){
+  const inv=INVOICES.find(i=>i.id===id);
+  if(!inv){closeSheet(); return;}
+  for(const ci of inv.items){
+    const p=PRODUCTS.find(x=>x.id===ci.productId);
+    if(p){ p.stock=(p.stock||0)+ci.qty; await dbPut('products',p); }
+  }
+  if(inv.customerId && inv.balance>0){
+    const cust=await dbGet('customers',inv.customerId);
+    if(cust){
+      cust.due=Math.max(0,(cust.due||0)-inv.balance);
+      cust.ledger=(cust.ledger||[]).filter(l=>l.invoiceId!==inv.id);
+      await dbPut('customers',cust);
+    }
+  }
+  await dbDelete('invoices',id);
+  await refreshData();
+  closeSheet();
+  toast('Invoice deleted ✓');
+  goto('billing', null, true);
 }
 
 function renderInvoiceDetail(id){
@@ -874,6 +978,10 @@ function renderInvoiceDetail(id){
     <button class="qbtn" style="background:var(--teal)" onclick="shareInvoicePDF('${inv.id}')"><span class="ic">📤</span>Share PDF</button>
     <button class="qbtn" style="background:var(--primary)" onclick="printInvoiceBluetooth('${inv.id}')"><span class="ic">🖨️</span>BT Print</button>
     <button class="qbtn" style="background:var(--accent)" onclick="printInvoiceSystem('${inv.id}')"><span class="ic">🖨️</span>Print</button>
+  </div>
+  <div class="quickrow">
+    <button class="qbtn" style="background:var(--primary-dark)" onclick="editInvoice('${inv.id}')"><span class="ic">✏️</span>Edit Invoice</button>
+    <button class="qbtn" style="background:var(--danger)" onclick="deleteInvoiceConfirm('${inv.id}')"><span class="ic">🗑️</span>Delete Invoice</button>
   </div>
   `;
 }
@@ -954,11 +1062,12 @@ function renderCustomerDetail(id){
     </div>
   </div>
   <div class="quickrow">
-    <button class="qbtn" style="background:var(--accent)" onclick="goto('newbill'); billingCustomer={id:'${c.id}',name:'${escAttr(c.name)}'};"><span class="ic">🧾</span>New Bill</button>
+    <button class="qbtn" style="background:var(--accent)" onclick="startNewBill({id:'${c.id}',name:'${escAttr(c.name)}'})"><span class="ic">🧾</span>New Bill</button>
     ${c.due>0? `<button class="qbtn" style="background:var(--success)" onclick="recordCustomerPayment('${c.id}')"><span class="ic">💵</span>Payment</button>`:''}
     <button class="qbtn" style="background:var(--teal)" onclick="sendCatalogToCustomer('${c.id}')"><span class="ic">📤</span>Send Catalog</button>
     <button class="qbtn" style="background:var(--primary)" onclick="openCustomerForm('${c.id}')"><span class="ic">✏️</span>Edit</button>
   </div>
+  <button class="btn btn-danger btn-block" style="margin-bottom:14px;" onclick="deleteCustomerConfirm('${c.id}')">🗑️ Delete Customer</button>
   <div class="sectionTitle">Transaction History</div>
   <div class="card">
     ${ledger.length? ledger.map(l=>`<div class="ledgerrow"><span>${l.type==='payment'?'💵 ':'🧾 '}${escHtml(l.note)}<br><span style="color:var(--muted);font-size:11px;">${fmtDate(l.date)}</span></span><span style="font-weight:800;color:${l.amount>0?'var(--danger)':'var(--success)'};">${l.amount>0?'+':''}${fmt(l.amount)}</span></div>`).join('') : `<div style="text-align:center;color:var(--muted);padding:10px;">No transactions yet</div>`}
@@ -983,6 +1092,21 @@ async function confirmCustomerPayment(custId){
 async function sendCatalogToCustomer(custId){
   selectedIds=new Set(PRODUCTS.map(p=>p.id));
   await shareCatalogPDF([...selectedIds]);
+}
+function deleteCustomerConfirm(id){
+  const c=CUSTOMERS.find(x=>x.id===id);
+  const dueNote = c && c.due>0? `<p style="color:var(--danger);font-size:13px;font-weight:700;">Note: this customer still has ${fmt(c.due)} udhar pending.</p>`:'';
+  openSheet(`<h3>Delete Customer?</h3><p style="color:var(--muted);font-size:13.5px;">Their past invoices will stay in Billing history, but their contact and ledger will be removed. This cannot be undone.</p>
+  ${dueNote}
+  <button class="btn btn-danger btn-block" onclick="deleteCustomerApply('${id}')">Yes, Delete Customer</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`);
+}
+async function deleteCustomerApply(id){
+  await dbDelete('customers',id);
+  await refreshData();
+  closeSheet();
+  toast('Customer deleted');
+  goto('customers', null, true);
 }
 
 /* ================= REPORTS ================= */
@@ -1019,13 +1143,159 @@ function renderReports(){
     <div class="trow"><span>Low Stock Items</span><span style="font-weight:800;color:var(--warning);">${lowStock.length}</span></div>
     <div class="trow"><span>Out of Stock Items</span><span style="font-weight:800;color:var(--danger);">${outStock.length}</span></div>
   </div>
+  <div class="sectionTitle">Download Reports (PDF)</div>
+  <div class="card">
+    <button class="btn btn-outline btn-block" onclick="generateSalesReportPDF()">📄 Sales Report (${reportRange==='today'?'Today':reportRange==='week'?'This Week':'This Month'})</button>
+    <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="generateCategoryReportPDF()">📄 Category-wise Stock Report</button>
+    <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="generateProductsReportPDF()">📄 All Products Report</button>
+  </div>
   ${lowStock.length? `<div class="sectionTitle">⚠️ Low Stock</div>` + lowStock.map(p=>`<div class="listrow" style="cursor:default;"><div class="l1">${escHtml(p.name)}</div><span class="badge badge-low">${p.stock} ${p.unit||'pcs'} left</span></div>`).join(''):''}
   <div class="sectionTitle">Invoices in Range</div>
   ${inRange.length? [...inRange].sort((a,b)=>b.date-a.date).map(invoiceRowHTML).join('') : `<div class="empty">No invoices in this range</div>`}
   `;
 }
 
-/* ================= SETTINGS ================= */
+/* ================= PDF REPORTS ================= */
+function generateSalesReportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const now=new Date();
+  let from, rangeLabel;
+  if(reportRange==='today'){from=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(); rangeLabel='Today';}
+  else if(reportRange==='week'){from=now.getTime()-7*86400000; rangeLabel='Last 7 Days';}
+  else {from=new Date(now.getFullYear(),now.getMonth(),1).getTime(); rangeLabel='This Month';}
+  const inRange=[...INVOICES.filter(i=>i.date>=from)].sort((a,b)=>a.date-b.date);
+  const totalSales=inRange.reduce((s,i)=>s+i.total,0);
+  const totalCollected=inRange.reduce((s,i)=>s+i.received,0);
+  const totalUdhar=inRange.reduce((s,i)=>s+i.balance,0);
+
+  doc.setFontSize(16); doc.setTextColor(91,33,182);
+  doc.text(SETTINGS.shopName||'My Shop', 14, 16);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text(SETTINGS.address||'', 14, 22);
+  doc.setFontSize(13); doc.setTextColor(30,20,50);
+  doc.text('Sales Report — '+rangeLabel, 14, 33);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text('Generated: '+fmtDateTime(Date.now()), 14, 39);
+
+  let y=50;
+  doc.setFontSize(10); doc.setTextColor(30,20,50);
+  doc.text('Total Sales: '+fmt(totalSales), 14, y);
+  doc.text('Collected: '+fmt(totalCollected), 85, y);
+  doc.text('Udhar: '+fmt(totalUdhar), 150, y);
+  y+=7;
+  doc.text('Total Invoices: '+inRange.length, 14, y);
+  y+=8;
+  doc.setDrawColor(200,200,200); doc.line(14,y,196,y); y+=7;
+
+  doc.setFontSize(10); doc.setTextColor(90,90,90);
+  doc.text('Inv#',14,y); doc.text('Date',38,y); doc.text('Customer',75,y); doc.text('Amount',150,y); doc.text('Status',175,y);
+  y+=4; doc.line(14,y,196,y); y+=6;
+  doc.setTextColor(30,20,50); doc.setFontSize(9.5);
+  if(!inRange.length){ doc.text('No invoices in this period.',14,y); y+=7; }
+  inRange.forEach(inv=>{
+    if(y>280){ doc.addPage(); y=20; }
+    doc.text('#'+inv.invoiceNo,14,y);
+    doc.text(fmtDate(inv.date),38,y);
+    doc.text((inv.customerName||'Walk-in').substring(0,26),75,y);
+    doc.text(fmt(inv.total),150,y);
+    doc.text(inv.status,175,y);
+    y+=7;
+  });
+  y+=3; doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
+  doc.setFontSize(11); doc.setTextColor(91,33,182);
+  doc.text('Grand Total: '+fmt(totalSales), 14, y);
+  doc.save('Sales_Report_'+rangeLabel.replace(/\s+/g,'_')+'.pdf');
+  toast('Sales report downloaded ✓');
+}
+
+function generateCategoryReportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.setFontSize(16); doc.setTextColor(91,33,182);
+  doc.text(SETTINGS.shopName||'My Shop', 14, 16);
+  doc.setFontSize(13); doc.setTextColor(30,20,50);
+  doc.text('Category-wise Stock Report', 14, 28);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text('Generated: '+fmtDateTime(Date.now()), 14, 34);
+
+  const categories={};
+  PRODUCTS.forEach(p=>{
+    const cat=p.category||'Uncategorized';
+    if(!categories[cat]) categories[cat]=[];
+    categories[cat].push(p);
+  });
+  let y=46, grandValue=0;
+  const catNames=Object.keys(categories).sort();
+  if(!catNames.length){ doc.setFontSize(10); doc.setTextColor(90,90,90); doc.text('No products added yet.',14,y); }
+  catNames.forEach(cat=>{
+    if(y>265){doc.addPage(); y=20;}
+    const items=categories[cat];
+    const catValue=items.reduce((s,p)=>s+p.price*p.stock,0);
+    const catQty=items.reduce((s,p)=>s+p.stock,0);
+    grandValue+=catValue;
+    doc.setFontSize(11.5); doc.setTextColor(91,33,182);
+    doc.text(cat+' ('+items.length+' products)', 14, y); y+=6;
+    doc.setFontSize(9); doc.setTextColor(90,90,90);
+    doc.text('Product',16,y); doc.text('Price',128,y); doc.text('Stock',155,y); doc.text('Value',177,y);
+    y+=4; doc.setDrawColor(230,230,230); doc.line(14,y,196,y); y+=5;
+    doc.setTextColor(30,20,50); doc.setFontSize(9.5);
+    items.forEach(p=>{
+      if(y>280){doc.addPage(); y=20;}
+      doc.text(p.name.substring(0,44),16,y);
+      doc.text(fmt(p.price),128,y);
+      doc.text(String(p.stock)+' '+(p.unit||''),155,y);
+      doc.text(fmt(p.price*p.stock),177,y);
+      y+=6;
+    });
+    y+=2;
+    doc.setFontSize(9.5); doc.setTextColor(91,33,182);
+    doc.text('Subtotal: '+fmt(catValue)+' ('+catQty+' units)', 16, y); y+=11;
+  });
+  if(catNames.length){
+    if(y>270){doc.addPage(); y=20;}
+    doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
+    doc.setFontSize(12); doc.setTextColor(91,33,182);
+    doc.text('Grand Total Stock Value: '+fmt(grandValue), 14, y);
+  }
+  doc.save('Category_Stock_Report.pdf');
+  toast('Category report downloaded ✓');
+}
+
+function generateProductsReportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.setFontSize(16); doc.setTextColor(91,33,182);
+  doc.text(SETTINGS.shopName||'My Shop', 14, 16);
+  doc.setFontSize(13); doc.setTextColor(30,20,50);
+  doc.text('All Products Report', 14, 28);
+  doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text('Generated: '+fmtDateTime(Date.now())+'  ·  Total Products: '+PRODUCTS.length, 14, 34);
+  let y=46;
+  doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text('#',14,y); doc.text('Product',22,y); doc.text('Category',92,y); doc.text('Price',138,y); doc.text('Stock',162,y); doc.text('Value',182,y);
+  y+=4; doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y+=6;
+  doc.setTextColor(30,20,50); doc.setFontSize(9);
+  let totalValue=0;
+  const sorted=[...PRODUCTS].sort((a,b)=>a.name.localeCompare(b.name));
+  if(!sorted.length){ doc.text('No products added yet.',14,y); y+=7; }
+  sorted.forEach((p,idx)=>{
+    if(y>280){doc.addPage(); y=20;}
+    const val=p.price*p.stock; totalValue+=val;
+    doc.text(String(idx+1),14,y);
+    doc.text(p.name.substring(0,32),22,y);
+    doc.text((p.category||'-').substring(0,17),92,y);
+    doc.text(fmt(p.price),138,y);
+    doc.text(String(p.stock),162,y);
+    doc.text(fmt(val),182,y);
+    y+=6;
+  });
+  y+=4; doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
+  doc.setFontSize(11); doc.setTextColor(91,33,182);
+  doc.text('Total Stock Value: '+fmt(totalValue), 14, y);
+  doc.save('All_Products_Report.pdf');
+  toast('Products report downloaded ✓');
+}
 function renderSettings(){
   return `
   <div class="sectionTitle">Shop Details</div>
