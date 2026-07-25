@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mobistock-cache-v1';
+const CACHE_NAME = 'mobistock-cache-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -17,8 +17,14 @@ self.addEventListener('install', (event) => {
           cache.add(new Request(url, { mode: 'no-cors' })).catch(() => {})
         )
       );
-    }).then(() => self.skipWaiting())
+    })
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

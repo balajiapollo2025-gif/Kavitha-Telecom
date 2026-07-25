@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#5B21B6">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-apple-touch.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-apple-touch.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MobiStock">
 <title>MobiStock — Wholesale Manager</title>
@@ -199,7 +199,7 @@ body{
       <h1 id="pageTitle">MobiStock</h1>
       <div class="sub" id="pageSub">Wholesale Manager</div>
     </div>
-    <button class="iconBtn" onclick="goto('settings')">⚙️</button>
+    <button class="iconBtn" id="settingsBtn" style="display:none;" onclick="goto('settings')">⚙️</button>
   </div>
   <div id="content"></div>
   <div id="printArea"></div>
@@ -214,6 +214,9 @@ body{
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+/* ================= APP VERSION ================= */
+const APP_VERSION = '1.2.0';
+
 /* ================= DB LAYER ================= */
 let db;
 function openDB(){
@@ -235,7 +238,7 @@ function dbGet(store,key){return new Promise((res,rej)=>{const tx=db.transaction
 function dbPut(store,val){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).put(val);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 function dbDelete(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');const r=tx.objectStore(store).delete(key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
 
-let SETTINGS={shopName:'KAVITHA TELECOM', phone:'89390 00833 / 90436 65107', address:'Shop No.34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002', gst:'', currency:'₹', logo:'', invoiceCounter:1};
+let SETTINGS={shopName:'KAVITHA TELECOM', phone:'89390 00833 / 90436 65107', address:'Shop No.34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002', gst:'', currency:'₹', logo:'', invoiceCounter:1, cutCommand:'GSVB0', autoBackupEnabled:true};
 async function loadSettings(){
   const rows=await dbGetAll('settings');
   rows.forEach(r=>{SETTINGS[r.key]=r.value;});
@@ -274,6 +277,7 @@ function goBack(){
 function render(){
   const cur=history[history.length-1];
   document.getElementById('backBtn').style.display = history.length>1 ? 'flex':'none';
+  document.getElementById('settingsBtn').style.display = (cur.screen==='reports') ? 'flex':'none';
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.scr===cur.screen));
   const titles={dashboard:['MobiStock','Wholesale Manager'],products:['Products','Manage your stock'],billing:['Billing','Invoices & bills'],customers:['Customers','Udhar & contacts'],reports:['Reports','Sales & stock'],settings:['Settings','Shop & printer'],newbill:['New Bill','Create invoice'],invoicedetail:['Invoice','Details'],customerdetail:['Customer','Ledger']};
   const t=titles[cur.screen]||['MobiStock',''];
@@ -361,6 +365,7 @@ function renderDashboard(){
     <button class="qbtn" style="background:var(--primary)" onclick="openProductForm()"><span class="ic">📦</span>Add Product</button>
     <button class="qbtn" style="background:var(--teal)" onclick="openCustomerForm()"><span class="ic">👤</span>Add Customer</button>
   </div>
+  <button class="btn btn-block" style="background:linear-gradient(120deg,#7C3AED,#FF6B4A); color:#fff; margin-bottom:14px;" onclick="startAdFlow()">🎨 Create Colorful WhatsApp Ad</button>
   <div class="sectionTitle">Recent Invoices <a onclick="goto('billing')">See all</a></div>
   ${recent.length? recent.map(inv=>invoiceRowHTML(inv)).join('') : `<div class="empty"><div class="bigic">🧾</div>No invoices yet.<br>Tap "New Bill" to create your first one.</div>`}
   `;
@@ -490,8 +495,9 @@ async function shareSelectedProducts(){
   const items=PRODUCTS.filter(p=>selectedIds.has(p.id));
   openSheet(`
   <h3>Share Catalog</h3>
+  <div class="actionsheet-item" onclick="closeSheet(); shareAdFlyer(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🎨</span>Colorful WhatsApp Ad (poster image)</div>
   <div class="actionsheet-item" onclick="closeSheet(); shareCatalogPDF(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">📄</span>Share as PDF (with images)</div>
-  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogImages(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🖼️</span>Share as Images</div>
+  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogImages(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🖼️</span>Share as Plain Images</div>
   `);
 }
 async function shareCatalogImages(ids){
@@ -533,6 +539,154 @@ async function shareCatalogPDF(ids){
   }
   doc.save('Product_Catalog.pdf');
   toast('PDF downloaded — share via WhatsApp manually');
+}
+
+/* ================= COLORFUL WHATSAPP AD POSTER ================= */
+function loadImageEl(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function drawImageCover(ctx,img,x,y,w,h){
+  const ir=img.width/img.height, tr=w/h;
+  let sx,sy,sw,sh;
+  if(ir>tr){ sh=img.height; sw=sh*tr; sx=(img.width-sw)/2; sy=0; }
+  else { sw=img.width; sh=sw/tr; sx=0; sy=(img.height-sh)/2; }
+  ctx.save();
+  roundRectPath(ctx,x,y,w,h,14);
+  ctx.clip();
+  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+  ctx.restore();
+}
+function wrapCanvasText(ctx,text,maxWidth){
+  const words=(text||'').split(/\s+/); let lines=[]; let cur='';
+  words.forEach(w=>{
+    const test=(cur+' '+w).trim();
+    if(ctx.measureText(test).width>maxWidth && cur){ lines.push(cur); cur=w; }
+    else cur=test;
+  });
+  if(cur)lines.push(cur);
+  return lines;
+}
+function truncateText(s,n){ return s.length>n? s.substring(0,n-1)+'…' : s; }
+
+async function buildAdFlyerCanvas(ids){
+  const items=PRODUCTS.filter(p=>ids.includes(p.id)).slice(0,6);
+  const W=1080, H=1350;
+  const canvas=document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  // Background gradient (brand colors)
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#5B21B6');
+  grad.addColorStop(0.55,'#7C3AED');
+  grad.addColorStop(1,'#FF6B4A');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+  // Decorative translucent circles
+  ctx.globalAlpha=0.10; ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(950,120,230,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(60,1300,200,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+
+  // Shop name + tagline
+  ctx.textAlign='center';
+  ctx.fillStyle='#fff';
+  ctx.font='800 60px sans-serif';
+  ctx.fillText(truncateText(SETTINGS.shopName||'MY SHOP',22), W/2, 100);
+  ctx.font='600 26px sans-serif';
+  ctx.globalAlpha=0.92;
+  ctx.fillText('Wholesale Dealer · Mobile Accessories', W/2, 138);
+  ctx.globalAlpha=1;
+
+  // Offers ribbon
+  ctx.fillStyle='#fff';
+  roundRectPath(ctx, W/2-190, 168, 380, 58, 29); ctx.fill();
+  ctx.fillStyle='#5B21B6';
+  ctx.font='800 30px sans-serif';
+  ctx.fillText('★ OUR PRODUCTS ★', W/2, 206);
+
+  // Product grid
+  const cols=2;
+  const gridTop=252, gridLeft=54, gap=18;
+  const cardW=(W-gridLeft*2-gap)/cols, cardH=300;
+  for(let i=0;i<items.length;i++){
+    const p=items[i];
+    const col=i%cols, row=Math.floor(i/cols);
+    const x=gridLeft+col*(cardW+gap), y=gridTop+row*(cardH+gap);
+    ctx.fillStyle='#fff';
+    roundRectPath(ctx,x,y,cardW,cardH,18); ctx.fill();
+    // image area
+    const imgH=170;
+    if(p.image){
+      try{ const img=await loadImageEl(p.image); drawImageCover(ctx,img,x+16,y+16,cardW-32,imgH); }
+      catch(e){ ctx.fillStyle='#EFEAFB'; roundRectPath(ctx,x+16,y+16,cardW-32,imgH,12); ctx.fill(); }
+    } else {
+      ctx.fillStyle='#EFEAFB'; roundRectPath(ctx,x+16,y+16,cardW-32,imgH,12); ctx.fill();
+      ctx.fillStyle='#5B21B6'; ctx.font='58px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('📱', x+cardW/2, y+16+imgH/2+20);
+    }
+    // name
+    ctx.fillStyle='#221B36'; ctx.font='700 24px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(truncateText(p.name,20), x+cardW/2, y+imgH+52);
+    // price badge
+    ctx.fillStyle='#FF6B4A';
+    roundRectPath(ctx, x+cardW/2-85, y+imgH+66, 170, 46, 23); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='800 26px sans-serif';
+    ctx.fillText(fmt(p.price), x+cardW/2, y+imgH+97);
+  }
+
+  // Footer band
+  const footerY=H-150;
+  ctx.fillStyle='rgba(255,255,255,0.16)';
+  ctx.fillRect(0,footerY,W,150);
+  ctx.fillStyle='#fff'; ctx.textAlign='center';
+  let fy=footerY+42;
+  if(SETTINGS.address){
+    ctx.font='600 25px sans-serif';
+    const addrLines=wrapCanvasText(ctx,'📍 '+SETTINGS.address,W-80).slice(0,2);
+    addrLines.forEach(ln=>{ ctx.fillText(ln, W/2, fy); fy+=34; });
+  }
+  if(SETTINGS.phone){
+    ctx.font='800 30px sans-serif';
+    ctx.fillText('📞 '+SETTINGS.phone, W/2, fy+8);
+  }
+
+  return canvas;
+}
+async function shareAdFlyer(ids){
+  toast('Creating your ad poster...');
+  try{
+    const canvas=await buildAdFlyerCanvas(ids);
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('Could not create poster'); return; }
+      const file=new File([blob], (SETTINGS.shopName||'MobiStock').replace(/\s+/g,'_')+'_Ad.png', {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({files:[file], title:'Our Products', text:(SETTINGS.shopName||'')+' — Check out our products!'}); return; }catch(e){}
+      }
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download=file.name; a.click();
+      toast('Poster downloaded — share via WhatsApp manually');
+    }, 'image/png', 0.95);
+  }catch(e){ toast('Could not create poster: '+(e.message||'')); }
+}
+function startAdFlow(){
+  selectMode=true; selectedIds=new Set();
+  goto('products');
+  toast('Select up to 6 products, then tap "Share Selected" for your ad poster');
 }
 
 /* ================= BILLING ================= */
@@ -826,6 +980,7 @@ function renderReports(){
   const lowStock=PRODUCTS.filter(p=>p.stock>0 && p.stock<=(p.lowStock||5));
   const outStock=PRODUCTS.filter(p=>p.stock<=0);
   return `
+  <button class="btn btn-outline btn-block" style="margin-bottom:12px;" onclick="goto('settings')">⚙️ Shop Settings, Printer & Backup</button>
   <div class="chiprow">
     <div class="chip ${reportRange==='today'?'active':''}" onclick="reportRange='today';renderInto('reports')">Today</div>
     <div class="chip ${reportRange==='week'?'active':''}" onclick="reportRange='week';renderInto('reports')">This Week</div>
@@ -877,11 +1032,35 @@ function renderSettings(){
     </div>
   </div>
 
+  <div class="sectionTitle">App Updates</div>
+  <div class="card">
+    <div class="miniNote">MobiStock checks for a newer version automatically each time you open the app. If a bill/feature seems out of date, tap below to force-refresh.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:13px;color:var(--muted);font-weight:700;">Current Version</span>
+      <span style="font-size:14px;font-weight:800;color:var(--primary-dark);">v${APP_VERSION}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-size:13px;color:var(--muted);font-weight:700;">Last Checked</span>
+      <span style="font-size:13px;font-weight:700;">${SETTINGS.lastUpdateCheck? fmtDateTime(SETTINGS.lastUpdateCheck) : 'Never'}</span>
+    </div>
+    <button class="btn btn-teal btn-block" onclick="checkForUpdates()">🔄 Check for Updates</button>
+  </div>
+
   <div class="sectionTitle">Bluetooth Printer</div>
   <div class="card">
     <div class="miniNote">Works with most common ESC/POS thermal receipt printers. If it doesn't connect, use "Print" (system dialog) or "Share PDF" instead on any invoice.</div>
     <div style="font-size:13px;margin-bottom:10px;">Status: <b id="btStatus">${btDevice? 'Connected: '+btDevice.name : 'Not connected'}</b></div>
     <button class="btn btn-teal btn-block" onclick="connectPrinter()">🔗 Connect Bluetooth Printer</button>
+    <div class="field" style="margin-top:12px;"><label>Paper Cut Command (change only if paper isn't cutting)</label>
+      <select id="s_cutcmd" onchange="saveSetting('cutCommand',this.value)">
+        <option value="GSVB0" ${SETTINGS.cutCommand==='GSVB0'?'selected':''}>Default (GS V B 0)</option>
+        <option value="GSV0" ${SETTINGS.cutCommand==='GSV0'?'selected':''}>Option 2 (GS V 0)</option>
+        <option value="GSV1" ${SETTINGS.cutCommand==='GSV1'?'selected':''}>Option 3 (GS V 1)</option>
+        <option value="ESCi" ${SETTINGS.cutCommand==='ESCi'?'selected':''}>Option 4 (ESC i)</option>
+        <option value="ESCm" ${SETTINGS.cutCommand==='ESCm'?'selected':''}>Option 5 (ESC m)</option>
+      </select>
+    </div>
+    <button class="btn btn-outline btn-block" onclick="testPrint()">🖨️ Test Print (with cut)</button>
   </div>
 
   <div class="sectionTitle">Backup & Restore</div>
@@ -894,7 +1073,21 @@ function renderSettings(){
     </label>
     <button class="btn btn-danger btn-block" style="margin-top:8px;" onclick="resetDataConfirm()">🗑️ Reset All Data</button>
   </div>
-  <div style="text-align:center;color:var(--muted);font-size:11.5px;margin-top:16px;">MobiStock v1.0 · Works fully offline</div>
+
+  <div class="sectionTitle">Daily Auto Backup</div>
+  <div class="card">
+    <div class="miniNote">MobiStock automatically saves a backup once a day (first time you open the app each day) — both inside the app and as a downloadable file. Keeps your last 7 days.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-size:13.5px;font-weight:700;">Auto Backup</span>
+      <label style="position:relative;display:inline-block;width:46px;height:26px;">
+        <input type="checkbox" id="autoBackupToggle" ${SETTINGS.autoBackupEnabled!==false?'checked':''} onchange="saveSetting('autoBackupEnabled',this.checked)" style="opacity:0;width:0;height:0;">
+        <span onclick="document.getElementById('autoBackupToggle').click()" style="position:absolute;cursor:pointer;inset:0;background:${SETTINGS.autoBackupEnabled!==false?'var(--success)':'var(--border)'};border-radius:26px;transition:.2s;"></span>
+        <span onclick="document.getElementById('autoBackupToggle').click()" style="position:absolute;height:20px;width:20px;left:${SETTINGS.autoBackupEnabled!==false?'23px':'3px'};top:3px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none;"></span>
+      </label>
+    </div>
+    <div id="autoBackupList">${renderAutoBackupListHTML()}</div>
+  </div>
+  <div style="text-align:center;color:var(--muted);font-size:11.5px;margin-top:16px;">MobiStock v${APP_VERSION} · Works fully offline</div>
   `;
 }
 async function handleLogoSelect(e){
@@ -930,6 +1123,65 @@ async function importBackup(e){
     await refreshData(); await loadSettings();
     toast('Backup restored ✓'); render();
   }catch(err){toast('Invalid backup file');}
+}
+
+/* ================= DAILY AUTO BACKUP ================= */
+let AUTO_BACKUPS=[];
+async function refreshAutoBackups(){
+  const rows=await dbGetAll('settings');
+  AUTO_BACKUPS = rows.filter(r=>r.key && r.key.startsWith('autobackup_')).sort((a,b)=>b.key.localeCompare(a.key));
+}
+function renderAutoBackupListHTML(){
+  if(!AUTO_BACKUPS.length) return `<div style="text-align:center;color:var(--muted);font-size:12.5px;padding:8px;">No auto-backups yet — one will be created automatically today.</div>`;
+  return AUTO_BACKUPS.map(r=>{
+    const dateStr=r.key.replace('autobackup_','');
+    return `<div class="ledgerrow"><span>📦 ${dateStr}</span><span style="display:flex;gap:8px;"><button class="iconsm" onclick="downloadAutoBackup('${r.key}')">⬇️</button><button class="iconsm" onclick="restoreAutoBackupConfirm('${r.key}')">↩️</button></span></div>`;
+  }).join('');
+}
+async function downloadAutoBackup(key){
+  const row=await dbGet('settings',key); if(!row)return;
+  const blob=new Blob([row.value],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=key+'.json'; a.click();
+  toast('Backup downloaded ✓');
+}
+function restoreAutoBackupConfirm(key){
+  const dateStr=key.replace('autobackup_','');
+  openSheet(`<h3>Restore ${dateStr} backup?</h3><p style="color:var(--muted);font-size:13.5px;">This will overwrite your current products, customers and invoices with this backup's data.</p>
+  <button class="btn btn-primary btn-block" onclick="restoreAutoBackupApply('${key}')">Restore This Backup</button>
+  <button class="btn btn-outline btn-block" style="margin-top:8px;" onclick="closeSheet()">Cancel</button>`);
+}
+async function restoreAutoBackupApply(key){
+  const row=await dbGet('settings',key); if(!row){closeSheet(); return;}
+  try{
+    const data=JSON.parse(row.value);
+    for(const p of (data.products||[]))await dbPut('products',p);
+    for(const c of (data.customers||[]))await dbPut('customers',c);
+    for(const i of (data.invoices||[]))await dbPut('invoices',i);
+    await refreshData();
+    closeSheet(); toast('Restored ✓'); render();
+  }catch(e){ closeSheet(); toast('Could not restore this backup'); }
+}
+async function runDailyAutoBackup(){
+  try{
+    if(SETTINGS.autoBackupEnabled===false) return;
+    if(!PRODUCTS.length && !CUSTOMERS.length && !INVOICES.length) return;
+    const todayKey='autobackup_'+new Date().toISOString().slice(0,10);
+    const existing=await dbGet('settings',todayKey).catch(()=>null);
+    if(existing) return;
+    const data={products:PRODUCTS, customers:CUSTOMERS, invoices:INVOICES, settings:SETTINGS, savedAt:Date.now()};
+    await dbPut('settings',{key:todayKey, value:JSON.stringify(data)});
+    const allKeys=(await dbGetAll('settings')).filter(r=>r.key.startsWith('autobackup_')).map(r=>r.key).sort();
+    while(allKeys.length>7){ const old=allKeys.shift(); await dbDelete('settings',old); }
+    try{
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='MobiStock_AutoBackup_'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(a); a.click(); a.remove();
+    }catch(e){}
+    await refreshAutoBackups();
+    toast('📦 Daily auto-backup saved ✓');
+  }catch(e){}
 }
 function resetDataConfirm(){
   openSheet(`<h3>Reset All Data?</h3><p style="color:var(--danger);font-size:13.5px;font-weight:700;">This will permanently delete all products, customers and invoices on this device. This cannot be undone.</p>
@@ -979,6 +1231,7 @@ async function btWrite(bytes){
 function buildReceiptText(inv){
   let l=[];
   l.push(center(SETTINGS.shopName||'MY SHOP'));
+  if(SETTINGS.address) wrapText(SETTINGS.address,32).forEach(ln=>l.push(center(ln)));
   if(SETTINGS.phone)l.push(center(SETTINGS.phone));
   l.push('--------------------------------');
   l.push('Invoice #'+inv.invoiceNo);
@@ -990,6 +1243,7 @@ function buildReceiptText(inv){
     l.push(`  ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`);
   });
   l.push('--------------------------------');
+  l.push('Subtotal: Rs.'+inv.subtotal.toFixed(2));
   l.push('TOTAL: Rs.'+inv.total.toFixed(2));
   l.push('Received: Rs.'+inv.received.toFixed(2));
   l.push('Balance: Rs.'+inv.balance.toFixed(2));
@@ -998,13 +1252,53 @@ function buildReceiptText(inv){
   l.push(''); l.push(''); l.push('');
   return l.join('\n');
 }
+function wrapText(s,width){
+  const words=(s||'').split(/\s+/); let lines=[]; let cur='';
+  words.forEach(w=>{
+    if((cur+' '+w).trim().length>width){ if(cur)lines.push(cur.trim()); cur=w; }
+    else cur=(cur+' '+w).trim();
+  });
+  if(cur)lines.push(cur.trim());
+  return lines;
+}
 function center(s){const w=32; const pad=Math.max(0,Math.floor((w-s.length)/2)); return ' '.repeat(pad)+s;}
+const CUT_COMMANDS={
+  'GSVB0':[0x1D,0x56,0x42,0x00],
+  'GSV0':[0x1D,0x56,0x00],
+  'GSV1':[0x1D,0x56,0x01],
+  'ESCi':[0x1B,0x69],
+  'ESCm':[0x1B,0x6D],
+};
+function buildEscposBytes(text){
+  const encoder=new TextEncoder();
+  const init=new Uint8Array([0x1B,0x40]); // ESC @  (initialize printer)
+  const body=encoder.encode(text+'\n\n\n');
+  const cutCode=CUT_COMMANDS[SETTINGS.cutCommand]||CUT_COMMANDS['GSVB0'];
+  const cut=new Uint8Array(cutCode);
+  const out=new Uint8Array(init.length+body.length+cut.length);
+  out.set(init,0); out.set(body,init.length); out.set(cut, init.length+body.length);
+  return out;
+}
 async function printInvoiceBluetooth(id){
   if(!btChar){toast('Connect a Bluetooth printer first in Settings'); return;}
   const inv=INVOICES.find(i=>i.id===id);
   const text=buildReceiptText(inv);
-  const bytes=new TextEncoder().encode('\x1B\x40'+text+'\n\n\n');
-  try{ await btWrite(bytes); toast('Printing...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
+  const bytes=buildEscposBytes(text);
+  try{ await btWrite(bytes); toast('Printing & cutting...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
+}
+async function testPrint(){
+  if(!btChar){toast('Connect a Bluetooth printer first'); return;}
+  let lines=[center(SETTINGS.shopName||'MY SHOP')];
+  if(SETTINGS.address) wrapText(SETTINGS.address,32).forEach(ln=>lines.push(center(ln)));
+  if(SETTINGS.phone)lines.push(center(SETTINGS.phone));
+  lines.push('--------------------------------');
+  lines.push(center('TEST PRINT'));
+  lines.push('--------------------------------');
+  lines.push('If you can read this and');
+  lines.push('the paper cuts right below,');
+  lines.push('this cut setting works!');
+  const bytes=buildEscposBytes(lines.join('\n'));
+  try{ await btWrite(bytes); toast('Test printing...'); }catch(e){ toast('Print failed: '+(e.message||'')); }
 }
 
 /* ================= SYSTEM PRINT ================= */
@@ -1083,14 +1377,75 @@ function escAttr(s){return escHtml(s);}
   await openDB();
   await loadSettings();
   await refreshData();
+  await refreshAutoBackups();
   render();
+  runDailyAutoBackup();
 })();
 
-/* ================= PWA SERVICE WORKER ================= */
+/* ================= PWA SERVICE WORKER + AUTO UPDATE ================= */
+let swRegistration=null;
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  window.addEventListener('load', async ()=>{
+    try{
+      swRegistration = await navigator.serviceWorker.register('sw.js');
+      saveSetting('lastUpdateCheck',Date.now());
+      swRegistration.addEventListener('updatefound',()=>{
+        const nw=swRegistration.installing;
+        if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed' && navigator.serviceWorker.controller){
+            showUpdateBanner();
+          }
+        });
+      });
+    }catch(e){}
   });
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden && swRegistration){ swRegistration.update().catch(()=>{}); saveSetting('lastUpdateCheck',Date.now()); }
+  });
+  let reloadedForUpdate=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloadedForUpdate)return;
+    reloadedForUpdate=true;
+    window.location.reload();
+  });
+}
+function showUpdateBanner(){
+  if(document.getElementById('updateBanner'))return;
+  const el=document.createElement('div');
+  el.id='updateBanner';
+  el.className='toast';
+  el.style.cursor='pointer';
+  el.style.textDecoration='underline';
+  el.textContent='🔄 New version available — tap to update';
+  el.onclick=applyUpdate;
+  document.body.appendChild(el);
+}
+async function applyUpdate(){
+  toast('Updating...');
+  if(swRegistration && swRegistration.waiting){
+    swRegistration.waiting.postMessage({type:'SKIP_WAITING'});
+  } else {
+    try{ const keys=await caches.keys(); for(const k of keys) await caches.delete(k); }catch(e){}
+    setTimeout(()=>window.location.reload(),300);
+  }
+}
+async function checkForUpdates(){
+  toast('Checking for updates...');
+  await saveSetting('lastUpdateCheck',Date.now());
+  try{
+    if(swRegistration){
+      await swRegistration.update();
+      if(swRegistration.waiting){
+        swRegistration.waiting.postMessage({type:'SKIP_WAITING'});
+        return;
+      }
+    }
+    const keys=await caches.keys();
+    for(const k of keys) await caches.delete(k);
+    toast('Already up to date! Reloading...');
+    setTimeout(()=>window.location.reload(),700);
+  }catch(e){ toast('Could not check for updates — check your internet connection'); }
 }
 
 /* ================= PWA INSTALL (Android + Desktop) ================= */
