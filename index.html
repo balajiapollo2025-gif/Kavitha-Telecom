@@ -215,7 +215,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -841,7 +841,7 @@ function renderInvoiceDetail(id){
     <div class="divider"></div>
     <div style="font-size:13.5px;"><b>${escHtml(inv.customerName)}</b></div>
     <div class="divider"></div>
-    ${inv.items.map(it=>`<div class="trow"><span>${escHtml(it.name)} × ${it.qty}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
+    ${inv.items.map((it,idx)=>`<div class="trow"><span>${idx+1}. ${escHtml(it.name)} × ${it.qty}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
     <div class="divider"></div>
     <div class="trow"><span>Subtotal</span><span>${fmt(inv.subtotal)}</span></div>
     <div class="trow grand"><span>Total</span><span>${fmt(inv.total)}</span></div>
@@ -1246,9 +1246,10 @@ function buildReceiptLines(inv){
   lines.push({text:new Date(inv.date).toLocaleString('en-IN')});
   lines.push({text:'Customer: '+(inv.customerName||'Walk-in')});
   lines.push({text:'-'.repeat(W)});
-  inv.items.forEach(it=>{
-    lines.push({text:it.name.substring(0,W-2)});
-    lines.push({text:`  ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`});
+  inv.items.forEach((it,idx)=>{
+    const sn=(idx+1)+'. ';
+    lines.push({text:(sn+it.name).substring(0,W-2)});
+    lines.push({text:`   ${it.qty} x ${it.price} = Rs.${(it.qty*it.price).toFixed(2)}`});
   });
   lines.push({text:'-'.repeat(W)});
   lines.push({text:'Subtotal: Rs.'+inv.subtotal.toFixed(2)});
@@ -1333,8 +1334,8 @@ function printInvoiceSystem(id){
     <hr>
     <div>Invoice #${inv.invoiceNo} &nbsp; ${fmtDateTime(inv.date)}</div>
     <div>Customer: ${escHtml(inv.customerName)}</div>
-    <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amt</th></tr></thead>
-    <tbody>${inv.items.map(it=>`<tr><td>${escHtml(it.name)}</td><td>${it.qty}</td><td>${it.price}</td><td>${(it.qty*it.price).toFixed(2)}</td></tr>`).join('')}</tbody></table>
+    <table><thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th>Amt</th></tr></thead>
+    <tbody>${inv.items.map((it,idx)=>`<tr><td>${idx+1}</td><td>${escHtml(it.name)}</td><td>${it.qty}</td><td>${it.price}</td><td>${(it.qty*it.price).toFixed(2)}</td></tr>`).join('')}</tbody></table>
     <hr>
     <div><b>Total: ${fmt(inv.total)}</b></div>
     <div>Received: ${fmt(inv.received)}</div>
@@ -1360,11 +1361,11 @@ async function shareInvoicePDF(id){
   doc.text('Customer: '+(inv.customerName||'Walk-in'), 14, 45);
   let y=56;
   doc.setFontSize(10); doc.setTextColor(90,90,90);
-  doc.text('Item', 14, y); doc.text('Qty', 120, y); doc.text('Rate', 145, y); doc.text('Amount', 170, y);
+  doc.text('#', 14, y); doc.text('Item', 22, y); doc.text('Qty', 120, y); doc.text('Rate', 145, y); doc.text('Amount', 170, y);
   y+=4; doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y+=6;
   doc.setTextColor(30,20,50);
-  inv.items.forEach(it=>{
-    doc.text(it.name.substring(0,45), 14, y); doc.text(String(it.qty), 120, y);
+  inv.items.forEach((it,idx)=>{
+    doc.text(String(idx+1), 14, y); doc.text(it.name.substring(0,42), 22, y); doc.text(String(it.qty), 120, y);
     doc.text(String(it.price), 145, y); doc.text((it.qty*it.price).toFixed(2), 170, y);
     y+=7;
   });
