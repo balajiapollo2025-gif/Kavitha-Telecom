@@ -222,7 +222,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -330,7 +330,6 @@ async function openBarcodeScanner(onDetected){
     openSheet(`<h3>Camera Scanning Not Supported</h3><p style="color:var(--muted);font-size:13.5px;">Your browser doesn't support camera barcode scanning (works best on Chrome for Android). Please type the barcode/SKU manually instead.</p><button class="btn btn-primary btn-block" onclick="closeSheet()">OK</button>`);
     return;
   }
-  closeSheet();
   const overlay=document.createElement('div');
   overlay.className='scannerOverlay';
   overlay.id='scannerOverlay';
