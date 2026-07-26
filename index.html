@@ -222,7 +222,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.8.0';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -625,7 +625,7 @@ async function shareCatalogPDF(ids){
     doc.setFontSize(9.5); doc.setTextColor(90,90,90);
     doc.text(p.category||'', x+32, y+26);
     doc.setFontSize(11); doc.setTextColor(91,33,182);
-    doc.text(SETTINGS.currency+p.price, x+32, y+38);
+    doc.text(pdfMoney(p.price), x+32, y+38);
     if(x===14){x=108;} else {x=14; y+=cardH+6;}
   }
   const blob=doc.output('blob');
@@ -1277,9 +1277,9 @@ function generateSalesReportPDF(){
 
   let y=50;
   doc.setFontSize(10); doc.setTextColor(30,20,50);
-  doc.text('Total Sales: '+fmt(totalSales), 14, y);
-  doc.text('Collected: '+fmt(totalCollected), 85, y);
-  doc.text('Udhar: '+fmt(totalUdhar), 150, y);
+  doc.text('Total Sales: '+pdfMoney(totalSales), 14, y);
+  doc.text('Collected: '+pdfMoney(totalCollected), 85, y);
+  doc.text('Udhar: '+pdfMoney(totalUdhar), 150, y);
   y+=7;
   doc.text('Total Invoices: '+inRange.length, 14, y);
   y+=8;
@@ -1295,13 +1295,13 @@ function generateSalesReportPDF(){
     doc.text('#'+inv.invoiceNo,14,y);
     doc.text(fmtDate(inv.date),38,y);
     doc.text((inv.customerName||'Walk-in').substring(0,26),75,y);
-    doc.text(fmt(inv.total),150,y);
+    doc.text(pdfMoney(inv.total),150,y);
     doc.text(inv.status,175,y);
     y+=7;
   });
   y+=3; doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
   doc.setFontSize(11); doc.setTextColor(91,33,182);
-  doc.text('Grand Total: '+fmt(totalSales), 14, y);
+  doc.text('Grand Total: '+pdfMoney(totalSales), 14, y);
   doc.save('Sales_Report_'+rangeLabel.replace(/\s+/g,'_')+'.pdf');
   toast('Sales report downloaded ✓');
 }
@@ -1340,20 +1340,20 @@ function generateCategoryReportPDF(){
     items.forEach(p=>{
       if(y>280){doc.addPage(); y=20;}
       doc.text(p.name.substring(0,44),16,y);
-      doc.text(fmt(p.price),128,y);
+      doc.text(pdfMoney(p.price),128,y);
       doc.text(String(p.stock)+' '+(p.unit||''),155,y);
-      doc.text(fmt(p.price*p.stock),177,y);
+      doc.text(pdfMoney(p.price*p.stock),177,y);
       y+=6;
     });
     y+=2;
     doc.setFontSize(9.5); doc.setTextColor(91,33,182);
-    doc.text('Subtotal: '+fmt(catValue)+' ('+catQty+' units)', 16, y); y+=11;
+    doc.text('Subtotal: '+pdfMoney(catValue)+' ('+catQty+' units)', 16, y); y+=11;
   });
   if(catNames.length){
     if(y>270){doc.addPage(); y=20;}
     doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
     doc.setFontSize(12); doc.setTextColor(91,33,182);
-    doc.text('Grand Total Stock Value: '+fmt(grandValue), 14, y);
+    doc.text('Grand Total Stock Value: '+pdfMoney(grandValue), 14, y);
   }
   doc.save('Category_Stock_Report.pdf');
   toast('Category report downloaded ✓');
@@ -1382,14 +1382,14 @@ function generateProductsReportPDF(){
     doc.text(String(idx+1),14,y);
     doc.text(p.name.substring(0,32),22,y);
     doc.text((p.category||'-').substring(0,17),92,y);
-    doc.text(fmt(p.price),138,y);
+    doc.text(pdfMoney(p.price),138,y);
     doc.text(String(p.stock),162,y);
-    doc.text(fmt(val),182,y);
+    doc.text(pdfMoney(val),182,y);
     y+=6;
   });
   y+=4; doc.setDrawColor(150,150,150); doc.line(14,y,196,y); y+=8;
   doc.setFontSize(11); doc.setTextColor(91,33,182);
-  doc.text('Total Stock Value: '+fmt(totalValue), 14, y);
+  doc.text('Total Stock Value: '+pdfMoney(totalValue), 14, y);
   doc.save('All_Products_Report.pdf');
   toast('Products report downloaded ✓');
 }
@@ -1733,36 +1733,138 @@ function printInvoiceSystem(id){
   window.print();
 }
 
+/* ================= PDF HELPERS ================= */
+function pdfMoney(n){ return 'Rs.'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2}); }
+function numberToWordsIndian(num){
+  num=Math.round(num);
+  if(num===0) return 'Zero';
+  const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function twoDigits(n){ if(n<20) return ones[n]; return tens[Math.floor(n/10)]+(n%10? ' '+ones[n%10]:''); }
+  function threeDigits(n){ let str=''; if(n>=100){ str+=ones[Math.floor(n/100)]+' Hundred'; n=n%100; if(n)str+=' '; } if(n>0) str+=twoDigits(n); return str; }
+  let crore=Math.floor(num/10000000); num%=10000000;
+  let lakh=Math.floor(num/100000); num%=100000;
+  let thousand=Math.floor(num/1000); num%=1000;
+  let rest=num;
+  let parts=[];
+  if(crore) parts.push(threeDigits(crore)+' Crore');
+  if(lakh) parts.push(threeDigits(lakh)+' Lakh');
+  if(thousand) parts.push(threeDigits(thousand)+' Thousand');
+  if(rest) parts.push(threeDigits(rest));
+  return parts.length? parts.join(' ') : 'Zero';
+}
+function amountInWords(total){
+  const rupees=Math.floor(total);
+  const paise=Math.round((total-rupees)*100);
+  let words=numberToWordsIndian(rupees)+' Rupees';
+  if(paise>0) words+=' and '+numberToWordsIndian(paise)+' Paise';
+  words+=' Only';
+  return words;
+}
+
 /* ================= PDF INVOICE SHARE ================= */
 async function shareInvoicePDF(id){
   const inv=INVOICES.find(i=>i.id===id);
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF();
-  doc.setFontSize(16); doc.setTextColor(91,33,182);
-  doc.text(SETTINGS.shopName||'My Shop', 14, 16);
-  doc.setFontSize(9); doc.setTextColor(120,120,120);
-  doc.text(SETTINGS.phone||'', 14, 22);
-  doc.text(SETTINGS.address||'', 14, 27);
-  doc.setFontSize(11); doc.setTextColor(30,20,50);
-  doc.text('Invoice #'+inv.invoiceNo, 14, 38);
-  doc.text(new Date(inv.date).toLocaleString('en-IN'), 120, 38);
-  doc.text('Customer: '+(inv.customerName||'Walk-in'), 14, 45);
-  let y=56;
-  doc.setFontSize(10); doc.setTextColor(90,90,90);
-  doc.text('#', 14, y); doc.text('Item', 22, y); doc.text('Qty', 120, y); doc.text('Rate', 145, y); doc.text('Amount', 170, y);
-  y+=4; doc.setDrawColor(220,220,220); doc.line(14,y,196,y); y+=6;
-  doc.setTextColor(30,20,50);
+  const PURPLE=[91,33,182], ACCENT=[255,107,74], TEXT=[30,20,50], MUTED=[120,120,120], LIGHTBG=[245,241,255], GREEN=[16,163,74], RED=[220,38,38];
+
+  doc.setFillColor(...PURPLE);
+  doc.rect(0,0,210,6,'F');
+
+  let logoW=0;
+  if(SETTINGS.logo){
+    try{ doc.addImage(SETTINGS.logo,'JPEG',14,14,20,20); logoW=26; }catch(e){}
+  }
+  const nameX=14+logoW;
+  doc.setFont(undefined,'bold'); doc.setFontSize(19); doc.setTextColor(...PURPLE);
+  doc.text(SETTINGS.shopName||'My Shop', nameX, 24);
+  doc.setFont(undefined,'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED);
+  doc.text(SETTINGS.address||'', nameX, 30, {maxWidth:196-nameX});
+  doc.text('Phone: '+(SETTINGS.phone||''), nameX, 36);
+
+  let y=44;
+  doc.setDrawColor(...PURPLE); doc.setLineWidth(0.7);
+  doc.line(14,y,196,y);
+  y+=9;
+
+  doc.setFont(undefined,'bolditalic'); doc.setFontSize(15); doc.setTextColor(...ACCENT);
+  doc.text('TAX INVOICE', 105, y, {align:'center'});
+  doc.setFont(undefined,'normal');
+  y+=11;
+
+  doc.setFontSize(9); doc.setTextColor(...MUTED);
+  doc.text('BILL TO', 14, y);
+  doc.text('INVOICE DETAILS', 140, y);
+  y+=6;
+  doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.setTextColor(...TEXT);
+  doc.text(inv.customerName||'Walk-in Customer', 14, y);
+  doc.setFont(undefined,'normal'); doc.setFontSize(9.5);
+  doc.text('Invoice No: #'+inv.invoiceNo, 140, y);
+  y+=6;
+  doc.text('Date: '+fmtDate(inv.date), 140, y);
+  y+=10;
+
+  doc.setFillColor(...PURPLE);
+  doc.rect(14,y,182,9,'F');
+  doc.setTextColor(255,255,255); doc.setFont(undefined,'bold'); doc.setFontSize(9.5);
+  doc.text('#',18,y+6); doc.text('Item',26,y+6); doc.text('Qty',122,y+6); doc.text('Rate',148,y+6); doc.text('Amount',192,y+6,{align:'right'});
+  y+=9;
+  doc.setFont(undefined,'normal');
+
+  doc.setFontSize(9.5);
   inv.items.forEach((it,idx)=>{
-    doc.text(String(idx+1), 14, y); doc.text(it.name.substring(0,42), 22, y); doc.text(String(it.qty), 120, y);
-    doc.text(String(it.price), 145, y); doc.text((it.qty*it.price).toFixed(2), 170, y);
-    y+=7;
+    if(y>265){ doc.addPage(); y=20; }
+    if(idx%2===1){ doc.setFillColor(...LIGHTBG); doc.rect(14,y,182,8,'F'); }
+    doc.setTextColor(...TEXT);
+    doc.text(String(idx+1),18,y+6);
+    doc.text(it.name.substring(0,40),26,y+6);
+    doc.text(String(it.qty),122,y+6);
+    doc.text(pdfMoney(it.price),148,y+6);
+    doc.text(pdfMoney(it.qty*it.price),192,y+6,{align:'right'});
+    y+=8;
   });
-  y+=3; doc.line(14,y,196,y); y+=8;
-  doc.setFontSize(12); doc.setTextColor(91,33,182);
-  doc.text('Total: '+SETTINGS.currency+inv.total.toFixed(2), 140, y); y+=7;
-  doc.setFontSize(10); doc.setTextColor(90,90,90);
-  doc.text('Received: '+SETTINGS.currency+inv.received.toFixed(2), 140, y); y+=6;
-  doc.text('Balance Due: '+SETTINGS.currency+inv.balance.toFixed(2), 140, y);
+  y+=2; doc.setDrawColor(210,210,210); doc.line(14,y,196,y); y+=9;
+
+  const boxX=118;
+  doc.setFontSize(10); doc.setTextColor(...TEXT);
+  doc.text('Subtotal:', boxX, y); doc.text(pdfMoney(inv.subtotal), 196, y, {align:'right'});
+  y+=8;
+  doc.setFillColor(...ACCENT);
+  doc.rect(boxX-4, y-6, 82, 10, 'F');
+  doc.setTextColor(255,255,255); doc.setFont(undefined,'bold'); doc.setFontSize(11.5);
+  doc.text('TOTAL:', boxX, y+1); doc.text(pdfMoney(inv.total), 196, y+1, {align:'right'});
+  doc.setFont(undefined,'normal');
+  y+=12;
+  doc.setTextColor(...TEXT); doc.setFontSize(10);
+  doc.text('Received:', boxX, y); doc.text(pdfMoney(inv.received), 196, y, {align:'right'});
+  y+=7;
+  doc.setTextColor(...(inv.balance>0?RED:GREEN));
+  doc.setFont(undefined,'bold');
+  doc.text('Balance Due:', boxX, y); doc.text(pdfMoney(inv.balance), 196, y, {align:'right'});
+  doc.setFont(undefined,'normal');
+  y+=13;
+
+  doc.setTextColor(...TEXT); doc.setFontSize(9); doc.setFont(undefined,'italic');
+  doc.text('Amount in Words: '+amountInWords(inv.total), 14, y, {maxWidth:180});
+  doc.setFont(undefined,'normal');
+  y+=13;
+
+  doc.setFontSize(8.5); doc.setTextColor(...MUTED);
+  doc.text('Terms: Goods once sold will not be taken back. Thank you for shopping with us!', 14, y, {maxWidth:180});
+  y+=22;
+
+  if(y>255){ doc.addPage(); y=30; }
+  doc.setFontSize(10); doc.setTextColor(...TEXT); doc.setFont(undefined,'bold');
+  doc.text('For '+(SETTINGS.shopName||'My Shop'), 196, y, {align:'right'});
+  doc.setFont(undefined,'normal');
+  y+=20;
+  doc.setDrawColor(160,160,160);
+  doc.line(148,y,196,y);
+  y+=5;
+  doc.setFontSize(8.5); doc.setTextColor(...MUTED);
+  doc.text('Authorized Signatory', 196, y, {align:'right'});
+
   const blob=doc.output('blob');
   const file=new File([blob],'Invoice_'+inv.invoiceNo+'.pdf',{type:'application/pdf'});
   if(navigator.canShare && navigator.canShare({files:[file]})){
