@@ -222,7 +222,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.9.1';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -591,9 +591,9 @@ async function shareSelectedProducts(){
   const items=PRODUCTS.filter(p=>selectedIds.has(p.id));
   openSheet(`
   <h3>Share Catalog</h3>
-  <div class="actionsheet-item" onclick="closeSheet(); shareAdFlyer(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🎨</span>Colorful WhatsApp Ad (poster image)</div>
-  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogPDF(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">📄</span>Share as PDF (with images)</div>
-  <div class="actionsheet-item" onclick="closeSheet(); shareCatalogImages(${JSON.stringify(items.map(i=>i.id))})"><span class="ic">🖼️</span>Share as Plain Images</div>
+  <div class="actionsheet-item" onclick='closeSheet(); shareAdFlyer(${JSON.stringify(items.map(i=>i.id))})'><span class="ic">🎨</span>Colorful WhatsApp Ad (poster image)</div>
+  <div class="actionsheet-item" onclick='closeSheet(); shareCatalogPDF(${JSON.stringify(items.map(i=>i.id))})'><span class="ic">📄</span>Share as PDF (with images)</div>
+  <div class="actionsheet-item" onclick='closeSheet(); shareCatalogImages(${JSON.stringify(items.map(i=>i.id))})'><span class="ic">🖼️</span>Share as Plain Images</div>
   `);
 }
 async function shareCatalogImages(ids){
