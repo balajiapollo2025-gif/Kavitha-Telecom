@@ -222,7 +222,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ================= APP VERSION ================= */
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '1.9.4';
 
 /* ================= DB LAYER ================= */
 let db;
@@ -1398,7 +1398,20 @@ function generateProductsReportPDF(){
   toast('Products report downloaded ✓');
 }
 function renderSettings(){
+  const badContext = location.protocol!=='https:' && location.protocol!=='http:';
   return `
+  ${badContext? `
+  <div class="card" style="background:#FEF3C7; border:2px solid #F59E0B;">
+    <div style="font-weight:800; color:#92400E; font-size:14px; margin-bottom:8px;">⚠️ You're opening this the wrong way</div>
+    <div style="font-size:13px; color:#92400E; line-height:1.6;">
+      Your address bar shows <b>${escHtml(location.protocol)}//...</b> — you opened this file through WhatsApp (or a similar app's viewer), not through Chrome as a website.
+      <br><br>
+      <b>This exact copy can never be installed as an app</b>, no matter what you tap — that only works on your real website link.
+      <br><br>
+      <b>Fix:</b> Open Chrome by itself (not from WhatsApp) → go to your saved bookmark for this app (the https:// link) → then come back here and try Install.
+    </div>
+  </div>
+  ` : ''}
   <div class="sectionTitle">Shop Details</div>
   <div class="card">
     <label class="imgupload" id="logoBox" style="height:90px;">
@@ -1999,8 +2012,18 @@ async function installApp(){
     deferredInstallPrompt=null;
     return;
   }
-  if(location.protocol==='file:'){
-    toast('Please host this app online first (see README.txt), then open it in Chrome to install.');
+  if(location.protocol!=='https:' && location.protocol!=='http:'){
+    openSheet(`
+    <h3>⚠️ Wrong Way to Open This App</h3>
+    <div class="miniNote" style="background:#FEF3C7;color:#92400E;">You're viewing this through another app's built-in viewer (like WhatsApp's file preview) — not through Chrome directly. Installing only works when opened as a real website link.</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px;">
+      <b style="color:var(--text);">To fix this:</b><br>
+      1. Close this viewer and open <b>Chrome</b> normally<br>
+      2. Go to your app's actual web address (the one starting with <b>https://</b> — check your Chrome bookmarks or history for it)<br>
+      3. Once it's open in a proper Chrome tab (address bar shows https://...), come back to Settings and try Install again
+    </div>
+    <button class="btn btn-outline btn-block" onclick="closeSheet()">Got it</button>
+    `);
     return;
   }
   openSheet(`
@@ -2022,19 +2045,29 @@ async function installApp(){
   <button class="btn btn-outline btn-block" style="margin-top:12px;" onclick="closeSheet()">Got it</button>
   `);
 }
+function showLinkBox(link){
+  openSheet(`
+  <h3>Your Install Link</h3>
+  <div class="miniNote">Tap the box below, select all, and copy manually:</div>
+  <input type="text" readonly value="${escAttr(link)}" onclick="this.select()" style="width:100%;padding:12px;border-radius:11px;border:1.5px solid var(--border);font-size:13px;margin-bottom:12px;">
+  <button class="btn btn-primary btn-block" onclick="closeSheet()">Done</button>
+  `);
+}
 async function copyInstallLink(){
+  const link=location.href;
   try{
-    await navigator.clipboard.writeText(location.href);
+    await navigator.clipboard.writeText(link);
     toast('Link copied ✓ Paste it in Chrome\'s address bar to open & install');
   }catch(e){
-    toast('Could not copy automatically — link: '+location.href);
+    showLinkBox(link);
   }
 }
 async function shareInstallLink(){
+  const link=location.href;
   if(navigator.share){
-    try{ await navigator.share({title:'Install MobiStock', text:'Open this link in Chrome, then use the menu to Install app:', url:location.href}); return; }catch(e){}
+    try{ await navigator.share({title:'Install MobiStock', text:'Open this link in Chrome, then use the menu to Install app:', url:link}); return; }catch(e){}
   }
-  copyInstallLink();
+  showLinkBox(link);
 }
 </script>
 </body>

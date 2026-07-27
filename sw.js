@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mobistock-cache-v14';
+const CACHE_NAME = 'mobistock-cache-v16';
 const APP_SHELL = [
   './',
   './index.html',
