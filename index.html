@@ -1624,7 +1624,7 @@ function cartRowHTML(ci){
     <div class="ci">
       <div class="cn">${escHtml(ci.name)}</div>
       <div class="cp" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span>${SETTINGS.currency}</span><input type="number" value="${ci.price}" oninput="updateCartPrice('${ci.productId}',this.value)" style="width:60px;padding:4px 6px;border-radius:7px;border:1.5px solid var(--border);font-size:12px;">
+        <span>${SETTINGS.currency}</span><input type="number" inputmode="decimal" value="${ci.price}" onfocus="this.select()" onchange="updateCartPrice('${ci.productId}',this.value)" style="width:60px;padding:4px 6px;border-radius:7px;border:1.5px solid var(--border);font-size:12px;">
         <span>× ${ci.qty} = ${fmt(ci.price*ci.qty)}</span>
       </div>
     </div>
@@ -1645,12 +1645,7 @@ function setCartQty(id,val){
 function updateCartPrice(id,val){
   const item=CART.find(c=>c.productId===id); if(!item)return;
   item.price=parseFloat(val)||0;
-  const total=CART.reduce((s,i)=>s+i.price*i.qty,0);
-  const cartArea=document.getElementById('cartArea');
-  if(cartArea) cartArea.innerHTML = CART.map(ci=>cartRowHTML(ci)).join('');
-  const grand=document.querySelector('.totalsbox .trow.grand span:last-child');
-  if(grand) grand.textContent=fmt(total);
-  updateBalancePreview(total);
+  renderInto('newbill');
 }
 function renderBillProductList(q){
   const box=document.getElementById('billProductResults');
