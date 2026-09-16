@@ -1630,10 +1630,17 @@ function cartRowHTML(ci){
     </div>
     <div class="stepper">
       <button onclick="changeCartQty('${ci.productId}',-1)">−</button>
-      <span>${ci.qty}</span>
+      <input type="number" inputmode="numeric" min="1" value="${ci.qty}" onfocus="this.select()" onchange="setCartQty('${ci.productId}',this.value)" style="width:48px;text-align:center;padding:4px 2px;border-radius:7px;border:1.5px solid var(--border);font-size:14px;font-weight:700;">
       <button onclick="changeCartQty('${ci.productId}',1)">+</button>
     </div>
   </div>`;
+}
+function setCartQty(id,val){
+  const item=CART.find(c=>c.productId===id); if(!item)return;
+  const n=parseInt(val,10);
+  if(!n || n<=0){ CART=CART.filter(c=>c.productId!==id); }
+  else { item.qty=n; }
+  renderInto('newbill');
 }
 function updateCartPrice(id,val){
   const item=CART.find(c=>c.productId===id); if(!item)return;
