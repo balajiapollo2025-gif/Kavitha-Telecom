@@ -3575,6 +3575,7 @@ async function ocInitScreen(){
     brochure.addEventListener('click', (e)=>{ if(e.target.closest('.card-del') || e.target.closest('.card-img')) scheduleSave(); });
     new MutationObserver(scheduleSave).observe(brochure,{childList:true,subtree:true});
   }
+  oc_autoSyncCatalogOnLoad();
 }
 let oc_SYNC_TIMER=null;
 function oc_syncCatalogToBackend(){
@@ -3589,6 +3590,7 @@ function oc_syncCatalogToBackend(){
       console.log('[oc_sync] status', res.status, 'body:', bodyTxt);
       if(res.ok && bodyTxt.indexOf('success')!==-1){
         toast('✅ Catalog saved (products: '+data.products.length+')');
+        try{ await saveSetting('lastCatalogSyncAt', data.syncedAt); }catch(e3){}
       } else {
         toast('⚠️ Sync response: '+res.status+' — '+bodyTxt);
       }
@@ -3609,6 +3611,7 @@ async function oc_manualSync(){
     const res = await fetch(oc_CONFIG.scriptUrl + '?action=saveCatalog', { method:'POST', body: JSON.stringify(data) });
     let bodyTxt = '';
     try{ bodyTxt = await res.text(); }catch(e2){ bodyTxt = '(could not read response)'; }
+    if(res.ok && bodyTxt.indexOf('success')!==-1){ try{ await saveSetting('lastCatalogSyncAt', data.syncedAt); }catch(e3){} }
     alert('Server response:\\nStatus: '+res.status+' '+res.statusText+'\\nBody: '+bodyTxt.slice(0,300));
   }catch(e){
     alert('❌ Sync FAILED (network/CORS error):\\n'+(e && e.message ? e.message : e));
@@ -3883,6 +3886,14 @@ function oc_cardTemplate(d){
 }
 function oc_triggerImg(el){ el.querySelector('input[type=file]').click(); }
 function oc_renderDefault(){ document.getElementById('grid').innerHTML = oc_defaultCards.map(oc_cardTemplate).join(''); }
+function oc_applyCloudCatalog(data){
+  document.getElementById('grid').innerHTML = data.products.map(oc_cardTemplate).join('');
+  if(data.shopTag!=null) document.getElementById('shopTag').innerText = data.shopTag;
+  if(data.shopAddr!=null) document.getElementById('shopAddr').innerText = data.shopAddr;
+  if(data.shopPhone!=null) document.getElementById('shopPhone').innerText = data.shopPhone;
+  if(data.footerNote!=null) document.getElementById('footerNote').innerText = data.footerNote;
+  if(typeof data.offerMode==='boolean') document.getElementById('offerToggle').checked = data.offerMode;
+}
 async function oc_loadFromServer(){
   if(!oc_CONFIG.scriptUrl){ alert('⚠️ Please set the Google Sheet Backend URL in ⚙️ Order Setup first!'); return; }
   if(!confirm('This will replace what you see now with the catalog saved on the server. Continue?')) return;
@@ -3890,16 +3901,29 @@ async function oc_loadFromServer(){
     const res = await fetch(oc_CONFIG.scriptUrl + '?action=getCatalog');
     const data = await res.json();
     if(!data || !Array.isArray(data.products) || !data.products.length){ alert('No catalog found on the server yet.'); return; }
-    document.getElementById('grid').innerHTML = data.products.map(oc_cardTemplate).join('');
-    if(data.shopTag!=null) document.getElementById('shopTag').innerText = data.shopTag;
-    if(data.shopAddr!=null) document.getElementById('shopAddr').innerText = data.shopAddr;
-    if(data.shopPhone!=null) document.getElementById('shopPhone').innerText = data.shopPhone;
-    if(data.footerNote!=null) document.getElementById('footerNote').innerText = data.footerNote;
-    if(typeof data.offerMode==='boolean') document.getElementById('offerToggle').checked = data.offerMode;
+    oc_applyCloudCatalog(data);
     toast('Loaded latest catalog from server ✓');
     const b=document.getElementById('brochure');
     if(b){ try{ await saveSetting('adCatalogHTML', b.outerHTML); }catch(e){} }
+    try{ await saveSetting('lastCatalogSyncAt', data.syncedAt || Date.now()); }catch(e2){}
   }catch(e){ alert('❌ Could not load from server: '+(e&&e.message?e.message:e)); }
+}
+async function oc_autoSyncCatalogOnLoad(){
+  if(!oc_CONFIG.scriptUrl) return;
+  try{
+    const res = await fetch(oc_CONFIG.scriptUrl + '?action=getCatalog');
+    const data = await res.json();
+    if(!data || !Array.isArray(data.products) || !data.products.length) return;
+    const cloudSyncedAt = data.syncedAt || 0;
+    const localSyncedAt = SETTINGS.lastCatalogSyncAt || 0;
+    if(cloudSyncedAt > localSyncedAt){
+      oc_applyCloudCatalog(data);
+      const b=document.getElementById('brochure');
+      if(b){ try{ await saveSetting('adCatalogHTML', b.outerHTML); }catch(e){} }
+      await saveSetting('lastCatalogSyncAt', cloudSyncedAt);
+      toast('☁️ Catalog updated from another device');
+    }
+  }catch(e){ /* offline — keep showing local catalog */ }
 }
 function oc_sortGridByCategory(){
   const data = oc_collectData();
@@ -4417,7 +4441,8 @@ function oc_collectData(){
     footerNote: document.getElementById('footerNote').innerText.trim(),
     offerMode, products,
     scriptUrl: oc_CONFIG.scriptUrl,
-    waNumber: oc_CONFIG.waNumber
+    waNumber: oc_CONFIG.waNumber,
+    syncedAt: Date.now()
   };
 }
 
