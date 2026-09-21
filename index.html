@@ -62,6 +62,36 @@ body{
 .navbtn .ic{font-size:19px;}
 .navbtn.active{color:var(--primary);}
 .navbtn.active .ic{transform:scale(1.1);}
+.sidebarHeader{display:none;}
+
+/* ============ Desktop: sidebar layout ============ */
+@media (min-width:900px){
+  #appRoot{max-width:100%; flex-direction:row; align-items:stretch;}
+  #mainArea{flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh;}
+  #content{max-width:1300px; width:100%; margin:0 auto; padding:24px 28px 60px;}
+  .topbar{padding:18px 28px;}
+  .topbar h1{font-size:20px;}
+  .topbar .sub{font-size:12.5px;}
+
+  .bottomnav{
+    order:-1;
+    position:sticky; top:0; bottom:auto; flex:0 0 240px; width:240px; height:100vh;
+    flex-direction:column; align-items:stretch; overflow-y:auto;
+    background:linear-gradient(180deg,var(--primary) 0%,#3a1f52 100%);
+    border-top:none; box-shadow:4px 0 20px rgba(0,0,0,0.15); padding:0 0 20px;
+  }
+  .sidebarHeader{display:flex; align-items:center; gap:12px; padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,0.15); margin-bottom:10px;}
+  .sbLogoWrap{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;font-size:22px;}
+  .sbLogoWrap img{width:100%;height:100%;object-fit:cover;}
+  .sbName{color:#fff; font-weight:800; font-size:15px; line-height:1.2;}
+  .sbSub{color:rgba(255,255,255,0.7); font-size:11.5px; margin-top:2px;}
+  .navbtn{flex:0 0 auto; flex-direction:row; justify-content:flex-start; align-items:center; gap:12px; padding:12px 22px; font-size:14px; color:rgba(255,255,255,0.85); border-radius:0;}
+  .navbtn .ic{font-size:19px;}
+  .navbtn.active{color:#fff; background:rgba(255,255,255,0.14); border-right:4px solid #FFD84D;}
+  .navbtn.active .ic{transform:none;}
+  #autoInstallBanner{display:none !important;}
+  .statgrid{grid-template-columns:repeat(4,1fr);}
+}
 
 /* Cards */
 .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:12px;}
@@ -393,6 +423,7 @@ body{
     <button class="aibBtn" onclick="installApp()">Install</button>
     <button class="aibClose" onclick="dismissAutoInstallBanner()">✕</button>
   </div>
+  <div id="mainArea">
   <div class="topbar">
     <button class="backBtn" id="backBtn" style="display:none;" onclick="goBack()">←</button>
     <div class="titleBlock">
@@ -403,7 +434,15 @@ body{
   </div>
   <div id="content"></div>
   <div id="printArea"></div>
+  </div>
   <div class="bottomnav">
+    <div class="sidebarHeader" id="sidebarHeader">
+      <div class="sbLogoWrap"><img id="sidebarLogoImg" style="display:none;"><span id="sidebarLogoFallback">🏪</span></div>
+      <div>
+        <div class="sbName" id="sidebarShopName">Kavitha Telecom</div>
+        <div class="sbSub">Shop Manager</div>
+      </div>
+    </div>
     <button class="navbtn" data-scr="dashboard" onclick="goto('dashboard')"><span class="ic">🏠</span>Home</button>
     <button class="navbtn" data-scr="products" onclick="goto('products')"><span class="ic">📦</span>Products</button>
     <button class="navbtn" data-scr="purchases" onclick="goto('purchases')"><span class="ic">🛒</span>Purchases</button>
@@ -488,6 +527,14 @@ function render(){
   document.getElementById('backBtn').style.display = history.length>1 ? 'flex':'none';
   document.getElementById('settingsBtn').style.display = (cur.screen==='reports') ? 'flex':'none';
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.scr===cur.screen));
+  const sbName=document.getElementById('sidebarShopName');
+  if(sbName) sbName.textContent = SETTINGS.shopName || 'Kavitha Telecom';
+  const sbLogo=document.getElementById('sidebarLogoImg');
+  const sbFallback=document.getElementById('sidebarLogoFallback');
+  if(sbLogo && sbFallback){
+    if(SETTINGS.logo){ sbLogo.src=SETTINGS.logo; sbLogo.style.display='block'; sbFallback.style.display='none'; }
+    else { sbLogo.style.display='none'; sbFallback.style.display='block'; }
+  }
   const titles={dashboard:['Kavitha Telecom','Shop Manager'],products:['Products','Manage your stock'],billing:['Billing','Invoices & bills'],customers:['Customers','Udhar & contacts'],reports:['Reports','Sales & stock'],settings:['Settings','Shop & printer'],newbill:['New Bill','Create invoice'],invoicedetail:['Invoice','Details'],customerdetail:['Customer','Ledger'],purchases:['Purchases','Stock-in & suppliers'],newpurchase:['New Purchase','Add incoming stock'],purchasedetail:['Purchase','Details'],adcatalog:['Ad Catalog','Order catalog & orders'],mads:['M-Ads','Marketing brochures & ads'],labelmaker:['Label Maker','Barcode & QR product labels']};
   const t=titles[cur.screen]||['Kavitha Telecom',''];
   document.getElementById('pageTitle').textContent=t[0];
@@ -2582,18 +2629,24 @@ function renderSettings(){
   ` : ''}
   <div class="sectionTitle">Shop Details</div>
   <div class="card">
-    <label class="imgupload" id="logoBox" style="height:90px;">
+    ${SETTINGS.shopDetailsLocked? `
+    <div style="display:flex; align-items:center; gap:8px; background:#F1F5F9; border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:12.5px; color:#475569; font-weight:600;">
+      <span>🔒</span><span style="flex:1;">Shop details are locked to keep your official branding consistent.</span>
+      <button style="background:#fff;border:1.5px solid #cbd5e1;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;color:#334155;cursor:pointer;" onclick="toggleShopDetailsLock(false)">Unlock</button>
+    </div>` : ''}
+    <label class="imgupload" id="logoBox" style="height:90px; ${SETTINGS.shopDetailsLocked?'opacity:0.6;pointer-events:none;':''}">
       ${SETTINGS.logo? `<img src="${SETTINGS.logo}">` : `<div class="icbig">🏪</div>Shop Logo (optional)`}
-      <input type="file" accept="image/*" style="display:none" onchange="handleLogoSelect(event)">
+      <input type="file" accept="image/*" style="display:none" onchange="handleLogoSelect(event)" ${SETTINGS.shopDetailsLocked?'disabled':''}>
     </label>
-    <div class="field"><label>Shop Name</label><input id="s_name" value="${escAttr(SETTINGS.shopName)}"></div>
-    <div class="field"><label>Phone</label><input id="s_phone" value="${escAttr(SETTINGS.phone||'')}"></div>
-    <div class="field"><label>Address</label><textarea id="s_addr" rows="2">${escAttr(SETTINGS.address||'')}</textarea></div>
+    <div class="field"><label>Shop Name</label><input id="s_name" value="${escAttr(SETTINGS.shopName)}" ${SETTINGS.shopDetailsLocked?'disabled':''}></div>
+    <div class="field"><label>Phone</label><input id="s_phone" value="${escAttr(SETTINGS.phone||'')}" ${SETTINGS.shopDetailsLocked?'disabled':''}></div>
+    <div class="field"><label>Address</label><textarea id="s_addr" rows="2" ${SETTINGS.shopDetailsLocked?'disabled':''}>${escAttr(SETTINGS.address||'')}</textarea></div>
+    <div class="field"><label>Email</label><input id="s_email" type="email" value="${escAttr(SETTINGS.email||'')}" ${SETTINGS.shopDetailsLocked?'disabled':''}></div>
     <div class="row2">
       <div class="field"><label>GST No. (optional)</label><input id="s_gst" value="${escAttr(SETTINGS.gst||'')}"></div>
       <div class="field"><label>Currency Symbol</label><input id="s_cur" value="${escAttr(SETTINGS.currency)}"></div>
     </div>
-    <button class="btn btn-primary btn-block" onclick="saveShopSettings()">Save Shop Details</button>
+    ${SETTINGS.shopDetailsLocked? '' : `<button class="btn btn-primary btn-block" onclick="saveShopSettings(); toggleShopDetailsLock(true);">Save & Lock Shop Details</button>`}
   </div>
 
   <div class="sectionTitle">Install App</div>
@@ -2680,9 +2733,15 @@ async function saveShopSettings(){
   await saveSetting('shopName',document.getElementById('s_name').value.trim()||'My Shop');
   await saveSetting('phone',document.getElementById('s_phone').value.trim());
   await saveSetting('address',document.getElementById('s_addr').value.trim());
+  await saveSetting('email',document.getElementById('s_email').value.trim());
   await saveSetting('gst',document.getElementById('s_gst').value.trim());
   await saveSetting('currency',document.getElementById('s_cur').value.trim()||'₹');
   toast('Shop details saved ✓'); render();
+}
+async function toggleShopDetailsLock(locked){
+  await saveSetting('shopDetailsLocked', locked);
+  toast(locked? 'Shop details locked 🔒' : 'Shop details unlocked — you can edit now');
+  render();
 }
 async function exportBackup(){
   const data={products:PRODUCTS, customers:CUSTOMERS, invoices:INVOICES, purchases:PURCHASES, settings:SETTINGS, exportedAt:Date.now()};
@@ -3205,8 +3264,9 @@ function renderAdCatalog(){
       <div class="shopinfo">
         <div class="shopname" id="shopName" title="Comes from Shop Name in Settings">SREE LAKSHMI</div>
         <div class="shoptag editable" contenteditable="true" id="shopTag">FANCY STORE</div>
-        <div class="addr editable" contenteditable="true" id="shopAddr">📍 Kothapallimitta, S.R.Puram Mandal, Chittoor Dist.</div>
-        <div class="phone-line">📞 <span class="editable" contenteditable="true" id="shopPhone">9XXXXXXXXX</span></div>
+        <div class="addr ${SETTINGS.shopDetailsLocked?'':'editable'}" contenteditable="${SETTINGS.shopDetailsLocked?'false':'true'}" id="shopAddr">📍 Kothapallimitta, S.R.Puram Mandal, Chittoor Dist.</div>
+        <div class="phone-line">📞 <span class="${SETTINGS.shopDetailsLocked?'':'editable'}" contenteditable="${SETTINGS.shopDetailsLocked?'false':'true'}" id="shopPhone">9XXXXXXXXX</span></div>
+        <div class="phone-line" id="shopEmailLine" style="${SETTINGS.email?'':'display:none;'}">✉️ <span class="${SETTINGS.shopDetailsLocked?'':'editable'}" contenteditable="${SETTINGS.shopDetailsLocked?'false':'true'}" id="shopEmail">${escHtml(SETTINGS.email||'')}</span></div>
       </div>
     </div>
     <div class="band">📦 <span class="editable" contenteditable="true">Tap</span> on any product <span class="editable" contenteditable="true">to order</span></div>
@@ -3314,9 +3374,31 @@ async function ocInitScreen(){
     if(SETTINGS.logo){ logoImg.src=SETTINGS.logo; if(logoWrap) logoWrap.classList.add('has-img'); }
     else if(logoWrap){ logoWrap.classList.remove('has-img'); }
   }
+  let addrEl=document.getElementById('shopAddr');
+  let phoneEl=document.getElementById('shopPhone');
+  let emailEl=document.getElementById('shopEmail');
+  let emailLine=document.getElementById('shopEmailLine');
+  if(SETTINGS.shopDetailsLocked){
+    if(addrEl){ addrEl.textContent='📍 '+(SETTINGS.address||''); addrEl.contentEditable='false'; addrEl.classList.remove('editable'); }
+    if(phoneEl){ phoneEl.textContent=SETTINGS.phone||''; phoneEl.contentEditable='false'; phoneEl.classList.remove('editable'); }
+    if(SETTINGS.email){
+      if(!emailLine){
+        // Old locally-saved snapshot predates the email line — add it now.
+        emailLine=document.createElement('div');
+        emailLine.className='phone-line'; emailLine.id='shopEmailLine';
+        emailLine.innerHTML='✉️ <span id="shopEmail"></span>';
+        const phoneLineEl=phoneEl? phoneEl.closest('.phone-line') : null;
+        if(phoneLineEl && phoneLineEl.parentElement) phoneLineEl.parentElement.insertBefore(emailLine, phoneLineEl.nextSibling);
+        emailEl=document.getElementById('shopEmail');
+      }
+      emailLine.style.display='';
+      if(emailEl){ emailEl.textContent=SETTINGS.email; emailEl.contentEditable='false'; emailEl.classList.remove('editable'); }
+    }
+  } else if(!saved){
+    if(addrEl && SETTINGS.address) addrEl.textContent='📍 '+SETTINGS.address;
+    if(phoneEl && SETTINGS.phone) phoneEl.textContent=SETTINGS.phone;
+  }
   if(!saved){
-    const addrEl=document.getElementById('shopAddr'); if(addrEl && SETTINGS.address) addrEl.textContent='📍 '+SETTINGS.address;
-    const phoneEl=document.getElementById('shopPhone'); if(phoneEl && SETTINGS.phone) phoneEl.textContent=SETTINGS.phone;
     const tagEl=document.getElementById('shopTag'); if(tagEl) tagEl.textContent='MOBILES & ACCESSORIES STORE';
   }
   const brochure=document.getElementById('brochure');
@@ -4039,6 +4121,7 @@ function oc_printOrder(orderId){
   const shopTag = (document.getElementById('shopTag')||{}).innerText || '';
   const shopAddr = (document.getElementById('shopAddr')||{}).innerText || SETTINGS.address || '';
   const shopPhone = (document.getElementById('shopPhone')||{}).innerText || SETTINGS.phone || '';
+  const shopEmail = (document.getElementById('shopEmail')||{}).innerText || SETTINGS.email || '';
   const logoSrc = (document.getElementById('logoImg')||{}).src || SETTINGS.logo || '';
   const t = o.timestamp ? new Date(o.timestamp).toLocaleString('en-IN') : '';
 
@@ -4069,7 +4152,7 @@ function oc_printOrder(orderId){
       ${logoSrc? `<div style="text-align:center;margin-bottom:6px;"><img src="${logoSrc}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;"></div>`:''}
       <div class="bill-shop">${escHtml(shopName)}</div>
       ${shopTag? `<div class="bill-tag">${escHtml(shopTag)}</div>`:''}
-      <div class="bill-addr">${escHtml(shopAddr)}${shopPhone? ' • '+escHtml(shopPhone):''}</div>
+      <div class="bill-addr">${escHtml(shopAddr)}${shopPhone? ' • '+escHtml(shopPhone):''}${shopEmail? ' • '+escHtml(shopEmail):''}</div>
       <hr class="bill-hr">
       <div class="bill-meta"><span>#${o.orderId}</span><span>${t}</span></div>
       <div class="bill-cust">${escHtml(o.customerName||'-')} • ${escHtml(o.phone||'-')}</div>
@@ -4125,6 +4208,7 @@ function oc_collectData(){
     shopTag: document.getElementById('shopTag').innerText.trim(),
     shopAddr: document.getElementById('shopAddr').innerText.trim(),
     shopPhone: document.getElementById('shopPhone').innerText.trim(),
+    shopEmail: (document.getElementById('shopEmail')||{}).innerText ? document.getElementById('shopEmail').innerText.trim() : (SETTINGS.email||''),
     logo: (document.getElementById('logoImg').src && document.getElementById('logoImg').src.startsWith('data:')) ? document.getElementById('logoImg').src : '',
     footerNote: document.getElementById('footerNote').innerText.trim(),
     offerMode, products,
@@ -4271,7 +4355,7 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
   <div>
     <div class="shopname">${oc_escHtml(data.shopName)}</div>
     <div class="shoptag">${oc_escHtml(data.shopTag)}</div>
-    <div class="addr">📍 ${oc_escHtml(data.shopAddr)} &nbsp; 📞 ${oc_escHtml(data.shopPhone)}</div>
+    <div class="addr">📍 ${oc_escHtml(data.shopAddr)} &nbsp; 📞 ${oc_escHtml(data.shopPhone)}${data.shopEmail? ' &nbsp; ✉️ '+oc_escHtml(data.shopEmail) : ''}</div>
   </div>
 </div>
 <div class="installbar" id="installBar">📲 Install this app on your phone! <button onclick="oc_installApp()">Install</button></div>
@@ -4531,9 +4615,18 @@ function oc_shareBillToWhatsApp(){
 }
 
 
+async function ensureShopDetailsLockedV1(){
+  if(SETTINGS.shopDetailsLockedV1) return;
+  await saveSetting('address', 'Shop No. 34, Adhithya Complex, Meeran Sahib Street, Mount Road, Chennai - 600 002');
+  await saveSetting('phone', '89390 00833 / 90436 65107');
+  await saveSetting('email', 'kavithatelecom.chennai@gmail.com');
+  await saveSetting('shopDetailsLocked', true);
+  await saveSetting('shopDetailsLockedV1', true);
+}
 (async function init(){
   await openDB();
   await loadSettings();
+  await ensureShopDetailsLockedV1();
   await refreshData();
   await refreshAutoBackups();
   render();
