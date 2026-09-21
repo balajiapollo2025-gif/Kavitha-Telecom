@@ -3457,10 +3457,15 @@ function renderAdCatalog(){
   <div class="modal">
     <h2>⚙️ Order Setup</h2>
     <p>Paste the URL you get after deploying the Google Apps Script here. Click "📖 Step-by-step Setup Guide" below for full details.</p>
+    ${SETTINGS.orderSetupLocked? `
+    <div style="display:flex; align-items:center; gap:8px; background:#F1F5F9; border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:12.5px; color:#475569; font-weight:600;">
+      <span>🔒</span><span style="flex:1;">Order Setup is locked to prevent accidental changes.</span>
+      <button style="background:#fff;border:1.5px solid #cbd5e1;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;color:#334155;cursor:pointer;" onclick="oc_toggleSetupLock(false)">Unlock</button>
+    </div>` : ''}
     <label>Google Sheet Backend URL</label>
-    <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/xxxx/exec">
+    <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" ${SETTINGS.orderSetupLocked?'disabled':''}>
     <label>WhatsApp Order Number (fallback, with country code)</label>
-    <input type="text" id="waNumber" placeholder="91XXXXXXXXXX">
+    <input type="text" id="waNumber" placeholder="91XXXXXXXXXX" ${SETTINGS.orderSetupLocked?'disabled':''}>
 
     <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #ccc;">
       <label>🔊 New Order Alert Sound</label>
@@ -3476,7 +3481,7 @@ function renderAdCatalog(){
     <div class="status-ok" id="savedMsg">✅ Saved!</div>
     <div class="row">
       <button class="close" onclick="oc_closeSettings()">Close</button>
-      <button class="save" onclick="oc_saveSettings()">Save</button>
+      ${SETTINGS.orderSetupLocked? '' : `<button class="save" onclick="oc_saveSettings(true)">Save & Lock</button>`}
     </div>
     <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #ccc;">
       <button class="save" style="background:#2b8a3e;color:#fff;" onclick="oc_checkBackendVersion()">🔍 Check Backend Version</button>
@@ -3952,12 +3957,19 @@ function oc_copyGasCode(){
     alert('Could not copy — select the code manually in the box and press Ctrl+C');
   });
 }
-function oc_saveSettings(){
+async function oc_saveSettings(lock){
   oc_CONFIG.scriptUrl = document.getElementById('scriptUrl').value.trim();
   oc_CONFIG.waNumber = document.getElementById('waNumber').value.trim();
   try{ localStorage.setItem('shopManagerConfig', JSON.stringify(oc_CONFIG)); }catch(e){}
+  if(lock){ await saveSetting('orderSetupLocked', true); }
   const m = document.getElementById('savedMsg'); m.style.display='block';
-  setTimeout(()=>{ m.style.display='none'; oc_closeSettings(); }, 900);
+  setTimeout(()=>{ m.style.display='none'; oc_closeSettings(); if(lock) render(); }, 900);
+}
+async function oc_toggleSetupLock(locked){
+  await saveSetting('orderSetupLocked', locked);
+  toast(locked? 'Order Setup locked 🔒' : 'Order Setup unlocked — you can edit now');
+  render();
+  oc_openSettings();
 }
 
 /* ============ TAB SWITCHING ============ */
@@ -4815,10 +4827,19 @@ async function ensureShopDetailsLockedV1(){
   await saveSetting('shopDetailsLocked', true);
   await saveSetting('shopDetailsLockedV1', true);
 }
+async function ensureOrderSetupLockedV1(){
+  if(SETTINGS.orderSetupLockedV1) return;
+  oc_CONFIG.scriptUrl = 'https://script.google.com/macros/s/AKfycbwfNRdkVO8m0gCGereR0Sf8KrtAC_igv316JkyyrdhSBJ1JPiHoxJZxiWThy1vK4FD0mQ/exec';
+  oc_CONFIG.waNumber = '918939000833';
+  try{ localStorage.setItem('shopManagerConfig', JSON.stringify(oc_CONFIG)); }catch(e){}
+  await saveSetting('orderSetupLocked', true);
+  await saveSetting('orderSetupLockedV1', true);
+}
 (async function init(){
   await openDB();
   await loadSettings();
   await ensureShopDetailsLockedV1();
+  await ensureOrderSetupLockedV1();
   await refreshData();
   await autoSyncAppDataOnLoad();
   await refreshAutoBackups();
