@@ -478,6 +478,7 @@ body{
     <button class="navbtn" data-scr="adcatalog" onclick="goto('adcatalog')"><span class="ic">🛍️</span>Ad Catalog</button>
     <button class="navbtn" data-scr="mads" onclick="goto('mads')"><span class="ic">📣</span>M-Ads</button>
     <button class="navbtn" data-scr="labelmaker" onclick="goto('labelmaker')"><span class="ic">🏷️</span>Labels</button>
+    <button class="navbtn" data-scr="settings" onclick="goto('settings')"><span class="ic">⚙️</span>Settings</button>
   </div>
 </div>
 
@@ -3387,6 +3388,7 @@ function renderAdCatalog(){
     <button class="tbtn tab-btn active" id="tabEditorBtn" onclick="oc_showTab('editor')">🛠️ Catalog Editor</button>
     <button class="tbtn alt tab-btn" id="tabDashBtn" onclick="oc_showTab('dashboard')">📋 Orders Dashboard</button>
     <button class="tbtn alt tab-btn" id="tabReportBtn" onclick="oc_showTab('report')">📊 Orders Report</button>
+    <button class="tbtn alt tab-btn" id="tabVisitorsBtn" onclick="oc_showTab('visitors')">👥 Visitors</button>
   </div>
   <div id="editorActions" style="display:flex; gap:10px; flex-wrap:wrap;">
     <div class="grp"><span class="tlabel">Show Offer</span>
@@ -3450,6 +3452,11 @@ function renderAdCatalog(){
   <div class="dstats" id="rstats"></div>
   <button class="tbtn" style="margin:10px 0; width:100%; text-align:center;" onclick="oc_downloadReportPDF()">📄 Download Report PDF</button>
   <div class="dlist" id="rlist"></div>
+</div>
+
+<div id="visitorsPage" style="display:none; max-width:1000px; margin:0 auto; padding:16px 20px 40px;">
+  <div class="dstats" id="vstats"></div>
+  <div class="dlist" id="vlist"><div class="dloading">⏳ Loading...</div></div>
 </div>
 
 <!-- settings modal -->
@@ -3677,6 +3684,28 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (action === 'logVisitor') {
+    var vSheet = getVisitorsSheet();
+    vSheet.appendRow([
+      new Date().toISOString(),
+      e.parameter.name || '',
+      e.parameter.phone || ''
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'getVisitors') {
+    var vSheet2 = getVisitorsSheet();
+    var vData = vSheet2.getDataRange().getValues();
+    var visitors = [];
+    for (var vi = 1; vi < vData.length; vi++) {
+      visitors.push({ timestamp: vData[vi][0], name: vData[vi][1], phone: vData[vi][2] });
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true, visitors: visitors }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   var sheet = getOrdersSheet();
 
   if (action === 'updateStatus') {
@@ -3809,6 +3838,16 @@ function getOrdersSheet() {
   if (!sheet) {
     sheet = ss.insertSheet('Orders');
     sheet.appendRow(['Order ID', 'Timestamp', 'Customer Name', 'Phone', 'Items', 'Total', 'Status']);
+  }
+  return sheet;
+}
+
+function getVisitorsSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Visitors');
+  if (!sheet) {
+    sheet = ss.insertSheet('Visitors');
+    sheet.appendRow(['Timestamp', 'Name', 'Phone']);
   }
   return sheet;
 }`;
@@ -4001,9 +4040,11 @@ function oc_showTab(which){
   const isEditor = which==='editor';
   const isDash = which==='dashboard';
   const isReport = which==='report';
+  const isVisitors = which==='visitors';
   document.getElementById('editorPage').style.display = isEditor ? 'flex' : 'none';
   document.getElementById('dashboardPage').style.display = isDash ? 'block' : 'none';
   document.getElementById('reportPage').style.display = isReport ? 'block' : 'none';
+  document.getElementById('visitorsPage').style.display = isVisitors ? 'block' : 'none';
   document.getElementById('editorActions').style.display = isEditor ? 'flex' : 'none';
   document.getElementById('dashboardActions').style.display = isDash ? 'flex' : 'none';
   document.getElementById('editorHint').style.display = isEditor ? 'block' : 'none';
@@ -4011,8 +4052,10 @@ function oc_showTab(which){
   document.getElementById('tabEditorBtn').classList.toggle('active', isEditor);
   document.getElementById('tabDashBtn').classList.toggle('active', isDash);
   document.getElementById('tabReportBtn').classList.toggle('active', isReport);
+  document.getElementById('tabVisitorsBtn').classList.toggle('active', isVisitors);
   if(isDash) oc_loadOrders();
   if(isReport) oc_loadOrders().then(oc_renderReport);
+  if(isVisitors) oc_loadVisitors();
 }
 
 let oc_REPORT_RANGE = 'today';
@@ -4228,6 +4271,44 @@ async function oc_loadOrders(){
     oc_renderDashboard();
   }catch(e){
     document.getElementById('dlist').innerHTML = '<div class="dempty"><div class="big">⚠️</div>Orders did not load. Wait a moment and click 🔄 Refresh.</div>';
+  }
+}
+async function oc_loadVisitors(){
+  if(!oc_CONFIG.scriptUrl){
+    document.getElementById('vlist').innerHTML = '<div class="dempty"><div class="big">⚠️</div>Please set the Google Sheet URL in ⚙️ Order Setup first</div>';
+    document.getElementById('vstats').innerHTML = '';
+    return;
+  }
+  document.getElementById('vlist').innerHTML = '<div class="dloading">⏳ Loading...</div>';
+  try{
+    const res = await fetch(oc_CONFIG.scriptUrl + '?action=getVisitors');
+    const data = await res.json();
+    const visitors = (data.visitors || []).slice().reverse(); // newest first
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const todayCount = visitors.filter(v=>new Date(v.timestamp).getTime() >= todayStart.getTime()).length;
+    document.getElementById('vstats').innerHTML = `
+      <div class="dstat"><div class="n">${visitors.length}</div><div class="l">Total Visitors</div></div>
+      <div class="dstat"><div class="n">${todayCount}</div><div class="l">Today</div></div>
+    `;
+    if(!visitors.length){
+      document.getElementById('vlist').innerHTML = '<div class="dempty"><div class="big">👥</div>No visitors yet. Once customers open your Customer Order Page and enter their details, they will show up here.</div>';
+      return;
+    }
+    document.getElementById('vlist').innerHTML = visitors.map(v=>{
+      let d = new Date(v.timestamp);
+      let dateStr = isNaN(d.getTime()) ? (v.timestamp||'') : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      return `<div class="dcard">
+        <div class="drow">
+          <div>
+            <div class="dname">${v.name || '-'}</div>
+            <a class="dphone" href="tel:${v.phone}">📞 ${v.phone || '-'}</a>
+          </div>
+        </div>
+        <div class="ditems">🕒 ${dateStr}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('vlist').innerHTML = '<div class="dempty"><div class="big">⚠️</div>Visitors did not load. Wait a moment and try again.</div>';
   }
 }
 
@@ -4569,6 +4650,15 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 .zoombg img{max-width:100%;max-height:85vh;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);}
 .zoomclose{position:absolute;top:16px;right:16px;background:#fff;color:#241428;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;font-weight:900;cursor:pointer;}
 .installbar{display:none;align-items:center;gap:10px;background:linear-gradient(90deg,#f2c230,#ffe27a);color:#2b0a35;padding:9px 14px;font-weight:800;font-size:12.5px;text-align:center;justify-content:center;}
+.visitorGate{position:fixed;inset:0;z-index:500;background:linear-gradient(160deg,#2b0a35 0%,#5b2170 60%,#7C3AED 100%);display:flex;align-items:center;justify-content:center;padding:20px;}
+.visitorGateCard{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.vgLogo{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;background:linear-gradient(135deg,#7C3AED,#5B21B6);}
+.vgTitle{font-size:18px;font-weight:800;color:#2b0a35;}
+.vgSub{font-size:12px;color:#6b5470;margin-bottom:16px;}
+.visitorGateCard label{display:block;text-align:left;font-size:12.5px;font-weight:700;color:#2b0a35;margin:10px 0 4px;}
+.visitorGateCard input{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:inherit;box-sizing:border-box;}
+.visitorGateCard button{width:100%;margin-top:16px;background:linear-gradient(90deg,#7C3AED,#5B21B6);color:#fff;border:none;padding:12px;border-radius:12px;font-weight:800;font-size:14.5px;cursor:pointer;}
+.vgError{background:#FEE2E2;color:#B91C1C;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;margin-top:10px;}
 .installbar.show{display:flex;}
 .installbar button{background:#2b0a35;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;}
 @media print{
@@ -4579,6 +4669,19 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 }
 </style></head>
 <body>
+<div class="visitorGate" id="visitorGate">
+  <div class="visitorGateCard">
+    ${data.logo ? `<img src="${data.logo}" class="vgLogo">` : '<div class="vgLogo" style="display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>'}
+    <div class="vgTitle">${oc_escHtml(data.shopName)}</div>
+    <div class="vgSub">Please enter your details to view our catalog</div>
+    <label>Your Name</label>
+    <input id="vgName" placeholder="Enter your name">
+    <label>Mobile Number</label>
+    <input id="vgPhone" type="tel" inputmode="numeric" placeholder="10 digit number" maxlength="10">
+    <div id="vgError" class="vgError" style="display:none;"></div>
+    <button onclick="oc_submitVisitor()">Continue</button>
+  </div>
+</div>
 <div class="header">
   ${data.logo ? `<img class="logo" src="${data.logo}">` : ''}
   <div>
@@ -4650,16 +4753,16 @@ const DATA = ${dataJson};
 let cart = {};
 
 async function oc_refreshCatalog(){
-  if(!DATA.scriptUrl) return;
+  if(!DATA.scriptUrl){ oc_render(); return; }
   try{
     const res = await fetch(DATA.scriptUrl + '?action=getCatalog');
     const fresh = await res.json();
     if(fresh && Array.isArray(fresh.products) && fresh.products.length){
       DATA.products = fresh.products;
       if(typeof fresh.offerMode === 'boolean') DATA.offerMode = fresh.offerMode;
-      oc_render();
     }
-  }catch(e){ /* offline or not set up yet — keeps showing the already-saved products */ }
+  }catch(e){ /* offline or not set up yet — falls back to the embedded snapshot below */ }
+  oc_render();
 }
 
 function oc_escHtml(s){ return String(s||''); }
@@ -4714,8 +4817,42 @@ function oc_render(){
   });
   grid.innerHTML = html || '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#8a7290;">No products in this category yet.</div>';
 }
-oc_render();
+document.getElementById('grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#8a7290;">⏳ Loading products...</div>';
 oc_refreshCatalog();
+
+async function oc_logVisitor(name, phone){
+  if(!DATA.scriptUrl) return;
+  try{ await fetch(DATA.scriptUrl + '?action=logVisitor&name='+encodeURIComponent(name)+'&phone='+encodeURIComponent(phone)); }catch(e){}
+}
+function oc_checkVisitorGate(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem('kt_visitor')||'null'); }catch(e){}
+  const gate = document.getElementById('visitorGate');
+  if(saved && saved.name && saved.phone){
+    if(gate) gate.style.display='none';
+    oc_logVisitor(saved.name, saved.phone);
+  } else if(gate){
+    const nameInput = document.getElementById('vgName');
+    if(nameInput) nameInput.focus();
+  }
+}
+function oc_submitVisitor(){
+  const name = (document.getElementById('vgName').value||'').trim();
+  const phone = (document.getElementById('vgPhone').value||'').trim();
+  const errEl = document.getElementById('vgError');
+  if(!name || phone.length<10){
+    errEl.textContent = 'Please enter your name and a valid 10-digit mobile number';
+    errEl.style.display='block';
+    return;
+  }
+  errEl.style.display='none';
+  try{ localStorage.setItem('kt_visitor', JSON.stringify({name, phone})); }catch(e){}
+  document.getElementById('visitorGate').style.display='none';
+  oc_logVisitor(name, phone);
+}
+document.getElementById('vgPhone').addEventListener('keydown', e=>{ if(e.key==='Enter') oc_submitVisitor(); });
+document.getElementById('vgName').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('vgPhone').focus(); });
+oc_checkVisitorGate();
 
 function oc_openZoom(src){
   document.getElementById('zoomImg').src = src;
