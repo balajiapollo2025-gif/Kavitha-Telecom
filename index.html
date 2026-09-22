@@ -3870,9 +3870,9 @@ function oc_cardTemplate(d){
     <div class="card-edit-hint">✏️</div>
     <select class="card-cat" onchange="oc_handleCategoryChange(this)">${oc_categoryOptionsHtml(d.category)}</select>
     <div class="card-head editable" contenteditable="true">${d.title}</div>
-    <div class="card-img" onclick="oc_triggerImg(this)">
+    <div class="card-img${d.img?' has-img':''}" onclick="oc_triggerImg(this)">
       <span class="ph">🖼️ Add photo</span>
-      <img>
+      <img${d.img?` src="${d.img}"`:''}>
       <input type="file" accept="image/*" style="display:none" onchange="oc_handleImage(event,this.previousElementSibling,this.parentElement)">
       <div class="badge"><span class="editable" contenteditable="true">${d.off}</span>%<br>OFF</div>
     </div>
