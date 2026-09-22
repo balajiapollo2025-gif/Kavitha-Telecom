@@ -456,7 +456,6 @@ body{
       <h1 id="pageTitle">Kavitha Telecom</h1>
       <div class="sub" id="pageSub">Shop Manager</div>
     </div>
-    <button class="iconBtn" id="settingsBtn" style="display:none;" onclick="goto('settings')">⚙️</button>
   </div>
   <div id="content"></div>
   <div id="printArea"></div>
@@ -657,7 +656,6 @@ function goBack(){
 function render(){
   const cur=history[history.length-1];
   document.getElementById('backBtn').style.display = history.length>1 ? 'flex':'none';
-  document.getElementById('settingsBtn').style.display = (cur.screen==='reports') ? 'flex':'none';
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.scr===cur.screen));
   const sbName=document.getElementById('sidebarShopName');
   if(sbName) sbName.textContent = SETTINGS.shopName || 'Kavitha Telecom';
@@ -2561,7 +2559,6 @@ function renderReports(){
   const totalPurchasePaid=purchInRange.reduce((s,p)=>s+p.paid,0);
   const totalPurchaseDue=purchInRange.reduce((s,p)=>s+p.balance,0);
   return `
-  <button class="btn btn-outline btn-block" style="margin-bottom:12px;" onclick="goto('settings')">⚙️ Shop Settings, Printer & Backup</button>
   <div class="chiprow">
     <div class="chip ${reportRange==='today'?'active':''}" onclick="setReportRange('today')">Today</div>
     <div class="chip ${reportRange==='week'?'active':''}" onclick="setReportRange('week')">This Week</div>
