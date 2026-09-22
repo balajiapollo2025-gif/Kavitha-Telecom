@@ -4854,17 +4854,24 @@ async function ensureShopDetailsLockedV1(){
 }
 async function ensureOrderSetupLockedV1(){
   if(SETTINGS.orderSetupLockedV1) return;
-  oc_CONFIG.scriptUrl = 'https://script.google.com/macros/s/AKfycbwfNRdkVO8m0gCGereR0Sf8KrtAC_igv316JkyyrdhSBJ1JPiHoxJZxiWThy1vK4FD0mQ/exec';
+  await saveSetting('orderSetupLocked', true);
+  await saveSetting('orderSetupLockedV1', true);
+}
+async function ensureOrderSetupLockedV2(){
+  if(SETTINGS.orderSetupLockedV2) return;
+  oc_CONFIG.scriptUrl = 'https://script.google.com/macros/s/AKfycbwypQD8mkFRaPUyldjHvz4w4UewwaW3M5iCnYMeqtP4Y1tBVxSEaznGHzSnx5Mih83xCA/exec';
   oc_CONFIG.waNumber = '918939000833';
   try{ localStorage.setItem('shopManagerConfig', JSON.stringify(oc_CONFIG)); }catch(e){}
   await saveSetting('orderSetupLocked', true);
   await saveSetting('orderSetupLockedV1', true);
+  await saveSetting('orderSetupLockedV2', true);
 }
 (async function init(){
   await openDB();
   await loadSettings();
   await ensureShopDetailsLockedV1();
   await ensureOrderSetupLockedV1();
+  await ensureOrderSetupLockedV2();
   await refreshData();
   await autoSyncAppDataOnLoad();
   await refreshAutoBackups();
