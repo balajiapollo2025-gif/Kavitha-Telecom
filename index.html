@@ -532,7 +532,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 3;
+const APP_BUILD = 4;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -3540,8 +3540,9 @@ function renderAdCatalog(){
   <div class="dstats" id="dstats"></div>
   <div class="dfilters" id="dfilters">
     <button class="active" data-f="all" onclick="oc_setDashFilter('all',this)">All</button>
-    <button data-f="Pending" onclick="oc_setDashFilter('Pending',this)">Pending</button>
-    <button data-f="Completed" onclick="oc_setDashFilter('Completed',this)">Completed</button>
+    <button data-f="Pending" onclick="oc_setDashFilter('Pending',this)">🕒 Pending</button>
+    <button data-f="Packed" onclick="oc_setDashFilter('Packed',this)">📦 Packed</button>
+    <button data-f="Delivered" onclick="oc_setDashFilter('Delivered',this)">🚚 Delivered</button>
     <button data-f="Deleted" onclick="oc_setDashFilter('Deleted',this)">🗑️ Deleted (Report)</button>
   </div>
   <div class="dlist" id="dlist"><div class="dloading">⏳ Loading...</div></div>
@@ -3565,6 +3566,21 @@ function renderAdCatalog(){
 </div>
 
 <!-- settings modal -->
+<div class="modal-bg" id="deliveryModal">
+  <div class="modal">
+    <h2>🚚 Delivery Details</h2>
+    <p>Enter the courier/transport booking details. The customer will see this on their order page once saved.</p>
+    <label>LR Number / Courier Reference Number</label>
+    <input type="text" id="deliveryLR" placeholder="e.g. LR123456">
+    <label>Transport Name / Courier Name</label>
+    <input type="text" id="deliveryTransport" placeholder="e.g. VRL Logistics">
+    <div class="row">
+      <button class="close" onclick="oc_closeDeliveryModal()">Cancel</button>
+      <button class="save" onclick="oc_submitDelivery()">✅ Mark Delivered</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="settingsModal">
   <div class="modal">
     <h2>⚙️ Order Setup</h2>
@@ -3816,14 +3832,42 @@ function doGet(e) {
   if (action === 'updateStatus') {
     var orderId = e.parameter.orderId;
     var status = e.parameter.status;
+    var lrNumber = e.parameter.lrNumber;
+    var transportName = e.parameter.transportName;
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]) === orderId) {
         sheet.getRange(i + 1, 7).setValue(status);
+        if (lrNumber !== undefined) sheet.getRange(i + 1, 9).setValue(lrNumber);
+        if (transportName !== undefined) sheet.getRange(i + 1, 10).setValue(transportName);
         break;
       }
     }
     return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'getOrderByPhone') {
+    var searchPhone = String(e.parameter.phone || '').trim();
+    var pData = sheet.getDataRange().getValues();
+    var matched = [];
+    for (var pi = pData.length - 1; pi >= 1; pi--) {
+      if (String(pData[pi][3]).trim() === searchPhone) {
+        matched.push({
+          orderId: pData[pi][0],
+          timestamp: pData[pi][1],
+          customerName: pData[pi][2],
+          phone: pData[pi][3],
+          items: pData[pi][4],
+          total: pData[pi][5],
+          status: pData[pi][6] || 'Pending',
+          address: pData[pi][7] || '',
+          lrNumber: pData[pi][8] || '',
+          transportName: pData[pi][9] || ''
+        });
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true, orders: matched }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -3860,7 +3904,9 @@ function doGet(e) {
       items: data[i][4],
       total: data[i][5],
       status: data[i][6] || 'Pending',
-      address: data[i][7] || ''
+      address: data[i][7] || '',
+      lrNumber: data[i][8] || '',
+      transportName: data[i][9] || ''
     });
   }
   return ContentService.createTextOutput(JSON.stringify({ orders: orders }))
@@ -3942,7 +3988,11 @@ function getOrdersSheet() {
   var sheet = ss.getSheetByName('Orders');
   if (!sheet) {
     sheet = ss.insertSheet('Orders');
-    sheet.appendRow(['Order ID', 'Timestamp', 'Customer Name', 'Phone', 'Items', 'Total', 'Status']);
+    sheet.appendRow(['Order ID', 'Timestamp', 'Customer Name', 'Phone', 'Items', 'Total', 'Status', 'Address', 'LR Number', 'Transport Name']);
+  } else if (sheet.getLastColumn() < 10) {
+    sheet.getRange(1, 8).setValue('Address');
+    sheet.getRange(1, 9).setValue('LR Number');
+    sheet.getRange(1, 10).setValue('Transport Name');
   }
   return sheet;
 }
@@ -4420,14 +4470,15 @@ async function oc_loadVisitors(){
 function oc_renderDashboard(){
   const stats = document.getElementById('dstats');
   const active = oc_ORDERS.filter(o=>o.status!=='Deleted');
-  const pending = active.filter(o=>o.status!=='Completed').length;
-  const completed = active.filter(o=>o.status==='Completed').length;
-  const deletedCount = oc_ORDERS.filter(o=>o.status==='Deleted').length;
+  const pending = active.filter(o=>(o.status||'Pending')==='Pending').length;
+  const packed = active.filter(o=>o.status==='Packed').length;
+  const delivered = active.filter(o=>o.status==='Delivered').length;
   const totalRs = active.reduce((a,b)=>a+(Number(b.total)||0),0);
   stats.innerHTML = `
     <div class="dstat"><div class="n">${active.length}</div><div class="l">Total Orders</div></div>
-    <div class="dstat"><div class="n">${pending}</div><div class="l">Pending</div></div>
-    <div class="dstat"><div class="n">${completed}</div><div class="l">Completed</div></div>
+    <div class="dstat"><div class="n">${pending}</div><div class="l">🕒 Pending</div></div>
+    <div class="dstat"><div class="n">${packed}</div><div class="l">📦 Packed</div></div>
+    <div class="dstat"><div class="n">${delivered}</div><div class="l">🚚 Delivered</div></div>
     <div class="dstat"><div class="n">₹${totalRs}</div><div class="l">Total Value</div></div>
   `;
   let shown;
@@ -4444,10 +4495,29 @@ function oc_renderDashboard(){
   }
   list.innerHTML = shown.map(o=>{
     const status = o.status || 'Pending';
-    const isDone = status === 'Completed';
+    const isPacked = status === 'Packed';
+    const isDelivered = status === 'Delivered';
     const isDeleted = status === 'Deleted';
     const t = o.timestamp ? new Date(o.timestamp).toLocaleString('en-IN') : '';
-    return `<div class="dorder ${isDone?'done':''}">
+    const pillLabel = isDeleted?'🗑️ Deleted' : isDelivered?'🚚 Delivered' : isPacked?'📦 Packed' : '🕒 Pending';
+    let actionsHtml;
+    if(isDeleted){
+      actionsHtml = `<button class="dtogglebtn" onclick="oc_restoreOrder('${o.orderId}')">♻️ Restore</button>`;
+    } else {
+      let stageBtn;
+      if(status==='Pending'){
+        stageBtn = `<button class="dtogglebtn" onclick="oc_toggleOrderStatus('${o.orderId}','Packed')">📦 Mark Packed</button>`;
+      } else if(isPacked){
+        stageBtn = `<button class="dtogglebtn" onclick="oc_toggleOrderStatus('${o.orderId}','Pending')">↩️ Back to Pending</button>
+                    <button class="dtogglebtn" style="background:#2b8a3e;" onclick="oc_openDeliveryModal('${o.orderId}')">🚚 Add Delivery Details</button>`;
+      } else if(isDelivered){
+        stageBtn = `<button class="dtogglebtn" style="background:#fff;color:var(--maroon);" onclick="oc_openDeliveryModal('${o.orderId}')">✏️ Edit Delivery Details</button>`;
+      }
+      actionsHtml = `${stageBtn}
+               <button class="dtogglebtn" style="background:#fff;color:var(--maroon);" onclick="oc_printOrder('${o.orderId}')">🖨️ Print</button>
+               <button class="dtogglebtn" style="background:#fff0f0;color:#c0392b;border-color:#e8b4b4;" onclick="oc_deleteOrder('${o.orderId}')">🗑️ Delete</button>`;
+    }
+    return `<div class="dorder ${isDelivered?'done':''}">
       <div class="drow">
         <div>
           <div class="doid">#${o.orderId} • ${t}</div>
@@ -4458,19 +4528,42 @@ function oc_renderDashboard(){
         <div class="dtotal">₹${o.total}</div>
       </div>
       <div class="ditems">${o.items || ''}</div>
+      ${isDelivered && (o.lrNumber || o.transportName) ? `<div class="daddr">🚚 ${o.transportName||'-'} · LR No: ${o.lrNumber||'-'}</div>` : ''}
       <div class="dbar">
-        <span class="dpill ${status}">${isDeleted?'🗑️ Deleted': status==='Completed' ? '✅ Completed' : '🕒 Pending'}</span>
+        <span class="dpill ${status}">${pillLabel}</span>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          ${isDeleted
-            ? `<button class="dtogglebtn" onclick="oc_restoreOrder('${o.orderId}')">♻️ Restore</button>`
-            : `<button class="dtogglebtn" onclick="oc_toggleOrderStatus('${o.orderId}','${isDone?'Pending':'Completed'}')">${isDone ? 'Mark as Pending' : '✅ Mark Complete'}</button>
-               <button class="dtogglebtn" style="background:#fff;color:var(--maroon);" onclick="oc_printOrder('${o.orderId}')">🖨️ Print</button>
-               <button class="dtogglebtn" style="background:#fff0f0;color:#c0392b;border-color:#e8b4b4;" onclick="oc_deleteOrder('${o.orderId}')">🗑️ Delete</button>`
-          }
+          ${actionsHtml}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+let oc_deliveryOrderId = null;
+function oc_openDeliveryModal(orderId){
+  oc_deliveryOrderId = orderId;
+  const o = oc_ORDERS.find(x=>x.orderId===orderId);
+  document.getElementById('deliveryLR').value = (o && o.lrNumber) || '';
+  document.getElementById('deliveryTransport').value = (o && o.transportName) || '';
+  document.getElementById('deliveryModal').classList.add('open');
+}
+function oc_closeDeliveryModal(){
+  document.getElementById('deliveryModal').classList.remove('open');
+  oc_deliveryOrderId = null;
+}
+async function oc_submitDelivery(){
+  const lr = document.getElementById('deliveryLR').value.trim();
+  const transport = document.getElementById('deliveryTransport').value.trim();
+  if(!lr || !transport){ alert('Please enter both the LR / Courier Reference Number and the Transport / Courier Name'); return; }
+  const orderId = oc_deliveryOrderId;
+  try{
+    await fetch(oc_CONFIG.scriptUrl + '?action=updateStatus&orderId=' + encodeURIComponent(orderId) + '&status=Delivered&lrNumber=' + encodeURIComponent(lr) + '&transportName=' + encodeURIComponent(transport));
+    const o = oc_ORDERS.find(x=>x.orderId===orderId);
+    if(o){ o.status='Delivered'; o.lrNumber=lr; o.transportName=transport; }
+    oc_closeDeliveryModal();
+    oc_renderDashboard();
+    toast('Marked as Delivered ✓');
+  }catch(e){ alert('Failed to save delivery details, please try again'); }
 }
 
 async function oc_toggleOrderStatus(orderId, newStatus){
@@ -4755,6 +4848,16 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 .zoombg img{max-width:100%;max-height:85vh;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);}
 .zoomclose{position:absolute;top:16px;right:16px;background:#fff;color:#241428;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;font-weight:900;cursor:pointer;}
 .installbar{display:none;align-items:center;gap:10px;background:linear-gradient(90deg,#f2c230,#ffe27a);color:#2b0a35;padding:9px 14px;font-weight:800;font-size:12.5px;text-align:center;justify-content:center;}
+.mob-card{margin:10px 14px;padding:12px 14px;border-radius:14px;background:#fff;border:1.5px solid #eee0f0;box-shadow:0 2px 10px rgba(91,33,182,0.06);}
+.mob-head{font-size:12px;font-weight:800;color:#5b2170;margin-bottom:4px;}
+.mob-status{font-size:13.5px;font-weight:700;padding:6px 0;}
+.mob-status.pending{color:#b8860b;}
+.mob-status.packed{color:#1d6fa5;}
+.mob-status.delivered{color:#2b8a3e;}
+.mob-detail{font-size:12px;color:#6b5470;margin-top:2px;}
+.mob-track{display:flex;gap:6px;margin-top:8px;}
+.mob-track .seg{flex:1;height:6px;border-radius:4px;background:#eee0f0;}
+.mob-track .seg.on{background:#7C3AED;}
 .visitorGate{position:fixed;inset:0;z-index:500;background:linear-gradient(160deg,#2b0a35 0%,#5b2170 60%,#7C3AED 100%);display:flex;align-items:center;justify-content:center;padding:20px;}
 .visitorGateCard{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);}
 .vgLogo{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;background:linear-gradient(135deg,#7C3AED,#5B21B6);}
@@ -4796,6 +4899,7 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
   </div>
 </div>
 <div class="installbar" id="installBar">📲 Install this app on your phone! <button onclick="oc_installApp()">Install</button></div>
+<div id="myOrderBanner"></div>
 <div class="band">🛒 Set Qty on a product to order it</div>
 <div class="catFilterBar" id="catFilterBar"></div>
 <div class="grid" id="grid"></div>
@@ -4831,7 +4935,8 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
   <div class="modal thanks">
     <button class="closex" onclick="document.getElementById('thanksModal').classList.remove('open')">✕</button>
     <div class="big">🎉</div>
-    <h3 style="margin:2px 0 8px;">Order Placed!</h3>
+    <h3 style="margin:2px 0 8px;">✅ Order Sent!</h3>
+    <div style="font-size:12.5px;color:#6b5470;margin-bottom:10px;">We've received your order and will start packing it soon.</div>
     <div class="bill" id="billArea">
       ${data.logo ? `<div style="text-align:center;margin-bottom:6px;"><img src="${data.logo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;"></div>` : ''}
       <div class="bill-shop">${oc_escHtml(data.shopName)} ${oc_escHtml(data.shopTag)}</div>
@@ -4936,6 +5041,7 @@ function oc_checkVisitorGate(){
   if(saved && saved.name && saved.phone){
     if(gate) gate.style.display='none';
     oc_logVisitor(saved.name, saved.phone);
+    oc_loadMyOrderStatus();
   } else if(gate){
     const nameInput = document.getElementById('vgName');
     if(nameInput) nameInput.focus();
@@ -4954,6 +5060,44 @@ function oc_submitVisitor(){
   try{ localStorage.setItem('kt_visitor', JSON.stringify({name, phone})); }catch(e){}
   document.getElementById('visitorGate').style.display='none';
   oc_logVisitor(name, phone);
+  oc_loadMyOrderStatus();
+}
+async function oc_loadMyOrderStatus(){
+  if(!DATA.scriptUrl) return;
+  let phone = '';
+  try{ const v = JSON.parse(localStorage.getItem('kt_visitor')||'null'); if(v) phone = v.phone; }catch(e){}
+  if(!phone) return;
+  try{
+    const res = await fetch(DATA.scriptUrl + '?action=getOrderByPhone&phone=' + encodeURIComponent(phone));
+    const data = await res.json();
+    if(data && data.success && data.orders && data.orders.length){
+      oc_renderMyOrderBanner(data.orders[0]);
+    }
+  }catch(e){ /* silently ignore — offline or not set up yet */ }
+}
+function oc_renderMyOrderBanner(o){
+  const el = document.getElementById('myOrderBanner');
+  if(!el) return;
+  const status = o.status || 'Pending';
+  const stageIdx = status==='Delivered' ? 3 : status==='Packed' ? 2 : 1;
+  let statusHtml;
+  if(status==='Delivered'){
+    statusHtml = \`<div class="mob-status delivered">🚚 <b>Order Delivered</b></div>
+      <div class="mob-detail">Transport: \${oc_escHtml(o.transportName||'-')} · LR No: \${oc_escHtml(o.lrNumber||'-')}</div>\`;
+  } else if(status==='Packed'){
+    statusHtml = \`<div class="mob-status packed">📦 <b>Order Packed</b> — getting ready for delivery</div>\`;
+  } else {
+    statusHtml = \`<div class="mob-status pending">🕒 <b>Order Sent</b> — we'll start packing soon</div>\`;
+  }
+  el.innerHTML = \`<div class="mob-card">
+    <div class="mob-head">Your Order #\${oc_escHtml(String(o.orderId))}</div>
+    \${statusHtml}
+    <div class="mob-track">
+      <div class="seg \${stageIdx>=1?'on':''}"></div>
+      <div class="seg \${stageIdx>=2?'on':''}"></div>
+      <div class="seg \${stageIdx>=3?'on':''}"></div>
+    </div>
+  </div>\`;
 }
 document.getElementById('vgPhone').addEventListener('keydown', e=>{ if(e.key==='Enter') oc_submitVisitor(); });
 document.getElementById('vgName').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('vgPhone').focus(); });
@@ -5057,6 +5201,7 @@ async function oc_placeOrder(){
   document.getElementById('custAddr').value = '';
 
   cart = {}; oc_updateCartBar(); oc_render();
+  setTimeout(oc_loadMyOrderStatus, 1200);
 }
 
 function oc_shareBillToWhatsApp(){
