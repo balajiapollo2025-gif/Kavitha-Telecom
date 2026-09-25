@@ -532,7 +532,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 4;
+const APP_BUILD = 5;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -5254,18 +5254,25 @@ async function ensureOrderSetupLockedV2(){
   await saveSetting('orderSetupLockedV2', true);
 }
 (async function init(){
-  await openDB();
-  await loadSettings();
-  await ensureShopDetailsLockedV1();
-  await ensureOrderSetupLockedV1();
-  await ensureOrderSetupLockedV2();
-  await refreshData();
-  await autoSyncAppDataOnLoad();
-  await refreshAutoBackups();
+  try{
+    await openDB();
+    await loadSettings();
+    await ensureShopDetailsLockedV1();
+    await ensureOrderSetupLockedV1();
+    await ensureOrderSetupLockedV2();
+    await refreshData();
+    await autoSyncAppDataOnLoad();
+    await refreshAutoBackups();
+  }catch(e){
+    console.error('App init had an issue (showing app anyway):', e);
+  }
   render();
   runDailyAutoBackup();
   maybeShowAutoInstallBanner();
-  fbLoadMadsImagesOnLoad().then(()=>{ if(cur.screen==='mads') render(); });
+  fbLoadMadsImagesOnLoad().then(()=>{
+    const c = history[history.length-1];
+    if(c && c.screen==='mads') render();
+  }).catch(()=>{});
 })();
 
 /* ================= PWA SERVICE WORKER + AUTO UPDATE ================= */
