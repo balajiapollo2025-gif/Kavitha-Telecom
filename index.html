@@ -535,7 +535,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 7;
+const APP_BUILD = 9;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -4752,11 +4752,22 @@ function oc_generateCustomerPage(){
     swLink.href = URL.createObjectURL(swBlob);
     swLink.download = 'customer-sw.js';
     swLink.click();
-    toast('2 files downloaded — host both in the same folder');
-  }, 600);
+  }, 500);
+
+  // Companion manifest.json — MUST be a real file (not a data: URI) or Chrome/Android will not
+  // treat the page as an installable PWA. Must also be uploaded to the SAME folder.
+  setTimeout(()=>{
+    const manifestJson = oc_buildManifestJson(data);
+    const mBlob = new Blob([manifestJson], {type:'application/manifest+json'});
+    const mLink = document.createElement('a');
+    mLink.href = URL.createObjectURL(mBlob);
+    mLink.download = 'customer-manifest.json';
+    mLink.click();
+    toast('3 files downloaded — host all three in the same folder');
+  }, 1000);
 }
 
-function oc_buildManifestDataUri(data){
+function oc_buildManifestJson(data){
   const icons = data.logo ? [
     {src:data.logo, sizes:'192x192', type:'image/jpeg', purpose:'any'},
     {src:data.logo, sizes:'512x512', type:'image/jpeg', purpose:'any'}
@@ -4764,14 +4775,17 @@ function oc_buildManifestDataUri(data){
   const manifest = {
     name: data.shopName + ' - Order Now',
     short_name: data.shopName,
-    start_url: './',
+    start_url: './customer-order-page.html',
     scope: './',
     display: 'standalone',
     background_color: '#e9e3f5',
     theme_color: '#2b0a35',
     icons: icons
   };
-  return 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+  return JSON.stringify(manifest, null, 2);
+}
+function oc_buildManifestDataUri(data){
+  return 'data:application/manifest+json,' + encodeURIComponent(oc_buildManifestJson(data));
 }
 function oc_buildCustomerHtml(data){
   const dataJson = JSON.stringify(data).replace(/</g,'\\u003c');
@@ -4779,7 +4793,7 @@ function oc_buildCustomerHtml(data){
 <html lang="te"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${data.shopName} - Order Now</title>
 <meta name="theme-color" content="#2b0a35">
-<link rel="manifest" href="${oc_buildManifestDataUri(data)}">
+<link rel="manifest" href="./customer-manifest.json">
 ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" href="${data.logo}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -4861,6 +4875,14 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 .mob-track{display:flex;gap:6px;margin-top:8px;}
 .mob-track .seg{flex:1;height:6px;border-radius:4px;background:#eee0f0;}
 .mob-track .seg.on{background:#7C3AED;}
+.myorditem{background:#fff;border:1.5px solid #eee0f0;border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;text-align:left;}
+.myorditem:hover{border-color:#7C3AED;}
+.myorditem .mo-top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#8a7290;}
+.myorditem .mo-total{font-weight:800;color:#2b0a35;font-size:15px;margin-top:2px;}
+.myorditem .mo-status{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.myorditem .mo-status.pending{background:#fdf1d6;color:#b8860b;}
+.myorditem .mo-status.packed{background:#dceaf7;color:#1d6fa5;}
+.myorditem .mo-status.delivered{background:#deefdf;color:#2b8a3e;}
 .visitorGate{position:fixed;inset:0;z-index:500;background:linear-gradient(160deg,#2b0a35 0%,#5b2170 60%,#7C3AED 100%);display:flex;align-items:center;justify-content:center;padding:20px;}
 .visitorGateCard{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);}
 .vgLogo{width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 12px;display:block;background:linear-gradient(135deg,#7C3AED,#5B21B6);}
@@ -4903,8 +4925,19 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
     <div class="addr">📍 ${oc_escHtml(data.shopAddr)} &nbsp; 📞 ${oc_escHtml(data.shopPhone)}${data.shopEmail? ' &nbsp; ✉️ '+oc_escHtml(data.shopEmail) : ''}</div>
   </div>
 </div>
-<div class="installbar" id="installBar">📲 Install this app on your phone! <button onclick="oc_installApp()">Install</button></div>
+<div class="installbar show" id="installBar">📲 Install this app for faster ordering next time! <button onclick="oc_installApp()">Install</button></div>
 <div id="myOrderBanner"></div>
+<div style="text-align:center;padding:6px 14px 0;">
+  <button onclick="oc_openMyOrders()" style="background:#fff;border:1.5px solid #7C3AED;color:#5b2170;font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:20px;cursor:pointer;">📋 My Orders</button>
+</div>
+
+<div class="modalbg" id="myOrdersModal">
+  <div class="modal">
+    <button class="closex" onclick="document.getElementById('myOrdersModal').classList.remove('open')">✕</button>
+    <h3>📋 My Orders</h3>
+    <div id="myOrdersList" style="margin-top:10px;"></div>
+  </div>
+</div>
 <div class="band">🛒 Set Qty on a product to order it</div>
 <div class="catFilterBar" id="catFilterBar"></div>
 <div class="grid" id="grid"></div>
@@ -4939,9 +4972,9 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 <div class="modalbg" id="thanksModal">
   <div class="modal thanks">
     <button class="closex" onclick="document.getElementById('thanksModal').classList.remove('open')">✕</button>
-    <div class="big">🎉</div>
-    <h3 style="margin:2px 0 8px;">✅ Order Sent!</h3>
-    <div style="font-size:12.5px;color:#6b5470;margin-bottom:10px;">We've received your order and will start packing it soon.</div>
+    <div class="big" id="thanksBig">🎉</div>
+    <h3 style="margin:2px 0 8px;" id="thanksTitle">✅ Order Sent!</h3>
+    <div style="font-size:12.5px;color:#6b5470;margin-bottom:10px;" id="thanksSub">We've received your order and will start packing it soon.</div>
     <div class="bill" id="billArea">
       ${data.logo ? `<div style="text-align:center;margin-bottom:6px;"><img src="${data.logo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;"></div>` : ''}
       <div class="bill-shop">${oc_escHtml(data.shopName)} ${oc_escHtml(data.shopTag)}</div>
@@ -5072,6 +5105,7 @@ function oc_submitVisitor(){
     if(bar) bar.classList.add('show');
   }
 }
+let oc_MY_ORDERS = [];
 async function oc_loadMyOrderStatus(){
   if(!DATA.scriptUrl) return;
   let phone = '';
@@ -5080,10 +5114,72 @@ async function oc_loadMyOrderStatus(){
   try{
     const res = await fetch(DATA.scriptUrl + '?action=getOrderByPhone&phone=' + encodeURIComponent(phone));
     const data = await res.json();
-    if(data && data.success && data.orders && data.orders.length){
-      oc_renderMyOrderBanner(data.orders[0]);
+    if(data && data.success && data.orders){
+      oc_MY_ORDERS = data.orders;
+      if(data.orders.length) oc_renderMyOrderBanner(data.orders[0]);
     }
   }catch(e){ /* silently ignore — offline or not set up yet */ }
+}
+async function oc_openMyOrders(){
+  const modal = document.getElementById('myOrdersModal');
+  const list = document.getElementById('myOrdersList');
+  modal.classList.add('open');
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:#8a7290;">⏳ Loading your orders...</div>';
+  let phone = '';
+  try{ const v = JSON.parse(localStorage.getItem('kt_visitor')||'null'); if(v) phone = v.phone; }catch(e){}
+  if(!phone || !DATA.scriptUrl){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#8a7290;">No orders found yet.</div>';
+    return;
+  }
+  try{
+    const res = await fetch(DATA.scriptUrl + '?action=getOrderByPhone&phone=' + encodeURIComponent(phone));
+    const data = await res.json();
+    oc_MY_ORDERS = (data && data.orders) || [];
+    if(!oc_MY_ORDERS.length){
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:#8a7290;">You haven\\'t placed any orders yet.</div>';
+      return;
+    }
+    list.innerHTML = oc_MY_ORDERS.map((o,idx)=>{
+      const status = o.status || 'Pending';
+      const statusCls = status==='Delivered'?'delivered':status==='Packed'?'packed':'pending';
+      const statusLabel = status==='Delivered'?'🚚 Delivered':status==='Packed'?'📦 Packed':'🕒 Pending';
+      let d = new Date(o.timestamp);
+      let dateStr = isNaN(d.getTime()) ? (o.timestamp||'') : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      return \`<div class="myorditem" onclick="oc_viewOldOrderBill(\${idx})">
+        <div class="mo-top"><span>#\${oc_escHtml(String(o.orderId))}</span><span>\${dateStr}</span></div>
+        <div class="mo-total">₹\${o.total}</div>
+        <div class="mo-status \${statusCls}">\${statusLabel}</div>
+      </div>\`;
+    }).join('');
+  }catch(e){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#8a7290;">⚠️ Could not load your orders. Please try again.</div>';
+  }
+}
+function oc_viewOldOrderBill(idx){
+  const o = oc_MY_ORDERS[idx];
+  if(!o) return;
+  const status = o.status || 'Pending';
+  const icon = status==='Delivered' ? '🚚' : status==='Packed' ? '📦' : '🎉';
+  const title = status==='Delivered' ? '🚚 Order Delivered' : status==='Packed' ? '📦 Order Packed' : '✅ Order Sent!';
+  const sub = status==='Delivered'
+    ? \`Delivered via \${oc_escHtml(o.transportName||'-')} · LR No: \${oc_escHtml(o.lrNumber||'-')}\`
+    : status==='Packed' ? 'Your order is packed and getting ready for delivery.'
+    : 'We\\'ve received your order and will start packing it soon.';
+  document.getElementById('thanksBig').innerText = icon;
+  document.getElementById('thanksTitle').innerText = title;
+  document.getElementById('thanksSub').innerText = sub;
+  document.getElementById('billId').innerText = '#' + o.orderId;
+  let d = new Date(o.timestamp);
+  document.getElementById('billDate').innerText = isNaN(d.getTime()) ? (o.timestamp||'') : d.toLocaleString('en-IN');
+  document.getElementById('billCust').innerText = (o.customerName||'') + ' • ' + (o.phone||'');
+  document.getElementById('billAddr').innerText = o.address ? ('📍 ' + o.address) : '';
+  const rows = String(o.items||'').split(';').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('billItems').innerHTML = rows.length
+    ? rows.map(r=>\`<tr><td colspan="4">\${oc_escHtml(r)}</td></tr>\`).join('')
+    : '<tr><td colspan="4">-</td></tr>';
+  document.getElementById('billTotal').innerText = '₹' + o.total;
+  document.getElementById('myOrdersModal').classList.remove('open');
+  document.getElementById('thanksModal').classList.add('open');
 }
 function oc_renderMyOrderBanner(o){
   const el = document.getElementById('myOrderBanner');
@@ -5128,18 +5224,35 @@ window.addEventListener('beforeinstallprompt', (ev)=>{
   const bar = document.getElementById('installBar');
   if(bar) bar.classList.add('show');
 });
+function oc_isStandalone(){
+  try{
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  }catch(e){ return false; }
+}
 async function oc_installApp(){
-  if(!oc_deferredInstallPrompt) return;
-  oc_deferredInstallPrompt.prompt();
-  await oc_deferredInstallPrompt.userChoice;
-  oc_deferredInstallPrompt = null;
-  const bar = document.getElementById('installBar');
-  if(bar) bar.classList.remove('show');
+  if(oc_deferredInstallPrompt){
+    oc_deferredInstallPrompt.prompt();
+    await oc_deferredInstallPrompt.userChoice;
+    oc_deferredInstallPrompt = null;
+    const bar = document.getElementById('installBar');
+    if(bar) bar.classList.remove('show');
+    return;
+  }
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS){
+    alert('📲 To install this app on iPhone/iPad:\\n\\n1. Tap the Share button (square with an arrow) at the bottom of Safari\\n2. Scroll down and tap "Add to Home Screen"\\n3. Tap "Add"\\n\\nThe app icon will then appear on your home screen.');
+  } else {
+    alert('📲 To install this app:\\n\\n1. Tap the ⋮ menu (top-right of Chrome)\\n2. Tap "Add to Home screen" or "Install app"\\n3. Tap "Install" or "Add"\\n\\nIf you don\\'t see this option, your browser may not support installing this app — you can still bookmark this page instead.');
+  }
 }
 window.addEventListener('appinstalled', ()=>{
   const bar = document.getElementById('installBar');
   if(bar) bar.classList.remove('show');
 });
+if(oc_isStandalone()){
+  const bar0 = document.getElementById('installBar');
+  if(bar0) bar0.classList.remove('show');
+}
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./customer-sw.js').catch(()=>{ /* if the file is missing, the page still works, just without the install feature */ });
@@ -5208,6 +5321,9 @@ async function oc_placeOrder(){
   oc_closeCheckout();
 
   const orderIdLocal = 'ORD' + new Date().getTime();
+  document.getElementById('thanksBig').innerText = '🎉';
+  document.getElementById('thanksTitle').innerText = '✅ Order Sent!';
+  document.getElementById('thanksSub').innerText = "We've received your order and will start packing it soon.";
   document.getElementById('billId').innerText = '#' + orderIdLocal;
   document.getElementById('billDate').innerText = new Date().toLocaleString('en-IN');
   document.getElementById('billCust').innerText = name + ' • ' + phone;
