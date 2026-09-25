@@ -333,6 +333,8 @@ body{
   #ocRoot .addr{color:#e9d7f2; font-size:12.5px; margin-top:5px;}
   #ocRoot .phone-line{color:var(--gold-2); font-size:13px; margin-top:5px; font-weight:700;}
   #ocRoot .band{background:linear-gradient(90deg,var(--pink),#ff4fa3); color:#fff; text-align:center; padding:8px; font-weight:800; font-size:14px; letter-spacing:1px;}
+  #ocRoot .flashnews{background:linear-gradient(90deg,#f2c230,#ffe27a); color:#5a3d00; text-align:center; padding:9px 40px 9px 14px; font-weight:700; font-size:13px; position:relative;}
+  #ocRoot .flashclear{position:absolute; right:8px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.12); border:none; color:#5a3d00; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; cursor:pointer;}
 
   #ocRoot .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px;}
   #ocRoot .card{background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 14px rgba(43,10,53,.12); position:relative; border:1px solid #eee2f0;}
@@ -535,7 +537,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 10;
+const APP_BUILD = 11;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -3533,6 +3535,10 @@ function renderAdCatalog(){
         <div class="phone-line" id="shopEmailLine" style="${SETTINGS.email?'':'display:none;'}">✉️ <span class="${SETTINGS.shopDetailsLocked?'':'editable'}" contenteditable="${SETTINGS.shopDetailsLocked?'false':'true'}" id="shopEmail">${escHtml(SETTINGS.email||'')}</span></div>
       </div>
     </div>
+    <div class="flashnews" id="flashNewsWrap">
+      📢 <span class="editable" contenteditable="true" id="flashNews">New products just arrived! Check them out 🎉</span>
+      <button class="flashclear" onclick="document.getElementById('flashNews').innerText='';">✕ Clear</button>
+    </div>
     <div class="band">📦 <span class="editable" contenteditable="true">Tap</span> on any product <span class="editable" contenteditable="true">to order</span></div>
     <div class="grid" id="grid"></div>
     <div class="addcard" onclick="oc_addCard()">➕ Add New Product</div>
@@ -4094,6 +4100,7 @@ function oc_applyCloudCatalog(data){
   if(data.shopAddr!=null) document.getElementById('shopAddr').innerText = data.shopAddr;
   if(data.shopPhone!=null) document.getElementById('shopPhone').innerText = data.shopPhone;
   if(data.footerNote!=null) document.getElementById('footerNote').innerText = data.footerNote;
+  if(data.flashNews!=null && document.getElementById('flashNews')) document.getElementById('flashNews').innerText = data.flashNews;
   if(typeof data.offerMode==='boolean') document.getElementById('offerToggle').checked = data.offerMode;
 }
 async function oc_loadFromServer(){
@@ -4728,6 +4735,7 @@ function oc_collectData(){
     shopEmail: (document.getElementById('shopEmail')||{}).innerText ? document.getElementById('shopEmail').innerText.trim() : (SETTINGS.email||''),
     logo: (document.getElementById('logoImg').src && document.getElementById('logoImg').src.startsWith('data:')) ? document.getElementById('logoImg').src : '',
     footerNote: document.getElementById('footerNote').innerText.trim(),
+    flashNews: (document.getElementById('flashNews')||{}).innerText ? document.getElementById('flashNews').innerText.trim() : '',
     offerMode, products,
     scriptUrl: oc_CONFIG.scriptUrl,
     waNumber: oc_CONFIG.waNumber,
@@ -4945,6 +4953,15 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
 </div>
 <div class="installbar show" id="installBar">📲 Install this app for faster ordering next time! <button onclick="oc_installApp()">Install</button></div>
 <div id="myOrderBanner"></div>
+
+<div class="modalbg" id="flashNewsModal">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:32px;">📢</div>
+    <h3 style="margin:6px 0 10px;">Latest Update</h3>
+    <div id="flashNewsText" style="font-size:14px;color:#3d2a4a;line-height:1.5;margin-bottom:16px;"></div>
+    <button onclick="document.getElementById('flashNewsModal').classList.remove('open')" style="background:linear-gradient(90deg,#7C3AED,#5B21B6);color:#fff;border:none;padding:10px 28px;border-radius:20px;font-weight:800;font-size:13.5px;cursor:pointer;">Got it 👍</button>
+  </div>
+</div>
 <div style="text-align:center;padding:6px 14px 0;">
   <button onclick="oc_openMyOrders()" style="background:#fff;border:1.5px solid #7C3AED;color:#5b2170;font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:20px;cursor:pointer;">📋 My Orders</button>
 </div>
@@ -5019,16 +5036,26 @@ const DATA = ${dataJson};
 let cart = {};
 
 async function oc_refreshCatalog(){
-  if(!DATA.scriptUrl){ oc_render(); return; }
+  if(!DATA.scriptUrl){ oc_render(); oc_showFlashNews(); return; }
   try{
     const res = await fetch(DATA.scriptUrl + '?action=getCatalog');
     const fresh = await res.json();
     if(fresh && Array.isArray(fresh.products) && fresh.products.length){
       DATA.products = fresh.products;
       if(typeof fresh.offerMode === 'boolean') DATA.offerMode = fresh.offerMode;
+      if(typeof fresh.flashNews === 'string') DATA.flashNews = fresh.flashNews;
     }
   }catch(e){ /* offline or not set up yet — falls back to the embedded snapshot below */ }
   oc_render();
+  oc_showFlashNews();
+}
+function oc_showFlashNews(){
+  const msg = (DATA.flashNews||'').trim();
+  const textEl = document.getElementById('flashNewsText');
+  const modal = document.getElementById('flashNewsModal');
+  if(!msg || !textEl || !modal) return;
+  textEl.innerText = msg;
+  modal.classList.add('open');
 }
 
 function oc_escHtml(s){ return String(s||''); }
