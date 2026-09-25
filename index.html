@@ -535,7 +535,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 9;
+const APP_BUILD = 10;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -3504,6 +3504,7 @@ function renderAdCatalog(){
       <span class="tlabel">Only MRP</span></div>
     <div class="grp"><button class="tbtn alt" onclick="oc_openSettings()">⚙️ Order Setup</button></div>
     <div class="grp"><button class="tbtn green" onclick="oc_generateCustomerPage()">📥 Customer Order Page Download</button></div>
+    <div class="grp"><button class="tbtn" style="background:#dcf8c6;color:#075e54;border:1.5px solid #25D366;" onclick="oc_shareCustomerLink()">📤 Share Link with Customer</button></div>
     <div class="grp"><button class="tbtn alt" onclick="oc_manualSync()">🔄 Sync Now</button></div>
     <div class="grp"><button class="tbtn" style="background:#fff4d6;color:#7a5900;border:1.5px solid #f2c230;" onclick="oc_sortGridByCategory()">🗂️ Sort by Category</button></div>
     <div class="grp"><button class="tbtn alt" onclick="oc_loadFromServer()">☁️ Load Saved Catalog</button></div>
@@ -3514,7 +3515,7 @@ function renderAdCatalog(){
     <div class="grp"><button class="tbtn" style="background:#fff0f0;color:#c0392b;border:1.5px solid #e8b4b4;" onclick="oc_clearAllOrders()">🗑️ Clear All</button></div>
   </div>
 </div>
-<div class="hint" id="editorHint">✏️ Click on text/image to edit. First set the Google Sheet URL in <b>⚙️ Order Setup</b>, then fix up your products and click <b>📥 Customer Order Page Download</b> to send the downloaded file to your customers on WhatsApp.</div>
+<div class="hint" id="editorHint">✏️ Click on text/image to edit. First set the Google Sheet URL in <b>⚙️ Order Setup</b>, then fix up your products, download and host the page, save its link in Order Setup, then use <b>📤 Share Link with Customer</b> to send it on WhatsApp.</div>
 <div class="hint" id="dashHint" style="display:none;">📋 Orders placed by customers show up here. It uses the same Google Sheet URL set in Order Setup.</div>
 
 <div class="stage" id="editorPage">
@@ -3597,6 +3598,9 @@ function renderAdCatalog(){
     <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/xxxx/exec" ${SETTINGS.orderSetupLocked?'disabled':''}>
     <label>WhatsApp Order Number (fallback, with country code)</label>
     <input type="text" id="waNumber" placeholder="91XXXXXXXXXX" ${SETTINGS.orderSetupLocked?'disabled':''}>
+    <label>Customer Order Page Link (after you host the downloaded files)</label>
+    <input type="text" id="customerPageUrl" placeholder="https://yourusername.github.io/yourrepo/customer-order-page.html" ${SETTINGS.orderSetupLocked?'disabled':''}>
+    <div style="font-size:11.5px;color:#8a7290;margin:-6px 0 8px;">This is the link you'll share with customers on WhatsApp — not a local file on your computer.</div>
 
     <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #ccc;">
       <label>🔊 New Order Alert Sound</label>
@@ -3769,7 +3773,7 @@ async function oc_checkBackendVersion(){
 }
 
 
-let oc_CONFIG = { scriptUrl:'', waNumber:'' };
+let oc_CONFIG = { scriptUrl:'', waNumber:'', customerPageUrl:'' };
 const oc_gasCode = `var BACKEND_VERSION = 'v3-chunked-catalog';
 
 function doGet(e) {
@@ -4013,6 +4017,7 @@ try{
   const saved = JSON.parse(localStorage.getItem('shopManagerConfig') || '{}');
   if(saved.scriptUrl) oc_CONFIG.scriptUrl = saved.scriptUrl;
   if(saved.waNumber) oc_CONFIG.waNumber = saved.waNumber;
+  if(saved.customerPageUrl) oc_CONFIG.customerPageUrl = saved.customerPageUrl;
 }catch(e){}
 
 function oc_escHtml(s){
@@ -4167,6 +4172,7 @@ function oc_toggleOfferMode(){
 function oc_openSettings(){
   document.getElementById('scriptUrl').value = oc_CONFIG.scriptUrl;
   document.getElementById('waNumber').value = oc_CONFIG.waNumber;
+  document.getElementById('customerPageUrl').value = oc_CONFIG.customerPageUrl || '';
   document.getElementById('alertSoundInfo').innerText = SETTINGS.oc_alertSound ? '✅ A custom alert sound is set.' : 'Using the default beep sound.';
   document.getElementById('settingsModal').classList.add('open');
 }
@@ -4181,6 +4187,7 @@ function oc_copyGasCode(){
 async function oc_saveSettings(lock){
   oc_CONFIG.scriptUrl = document.getElementById('scriptUrl').value.trim();
   oc_CONFIG.waNumber = document.getElementById('waNumber').value.trim();
+  oc_CONFIG.customerPageUrl = document.getElementById('customerPageUrl').value.trim();
   try{ localStorage.setItem('shopManagerConfig', JSON.stringify(oc_CONFIG)); }catch(e){}
   if(lock){ await saveSetting('orderSetupLocked', true); }
   const m = document.getElementById('savedMsg'); m.style.display='block';
@@ -4728,6 +4735,17 @@ function oc_collectData(){
   };
 }
 
+function oc_shareCustomerLink(){
+  const link = (oc_CONFIG.customerPageUrl||'').trim();
+  if(!link || !/^https?:\/\//i.test(link)){
+    alert('⚠️ Please save your hosted Customer Order Page link first.\n\nGo to ⚙️ Order Setup → "Customer Order Page Link" → paste the https:// link you get after hosting the downloaded files (e.g. on GitHub Pages) → Save.');
+    oc_openSettings();
+    return;
+  }
+  const shopName = document.getElementById('shopName') ? document.getElementById('shopName').innerText.trim() : 'our shop';
+  const msg = `🛍️ Order from ${shopName}!\n\nTap the link below to browse our products and place your order:\n${link}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
 function oc_generateCustomerPage(){
   if(!oc_CONFIG.scriptUrl){
     alert('⚠️ Please set the Google Sheet Backend URL in ⚙️ Order Setup first!');
