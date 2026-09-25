@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Kavitha Telecom">
 <title>Kavitha Telecom</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
 <style>
 :root{
   --primary:#5B21B6;
@@ -503,27 +503,30 @@ const firebaseConfig = {
   appId: "1:963832673282:web:242fbda8d0ca3597f1e31b"
 };
 let fbDb = null;
-try{
-  if(window.firebase){
+function fbEnsureInit(){
+  if(fbDb) return true;
+  if(typeof window.firebase === 'undefined') return false;
+  try{
     firebase.initializeApp(firebaseConfig);
     fbDb = firebase.firestore();
-  }
-}catch(e){ console.warn('Firebase init failed', e); }
+    return true;
+  }catch(e){ console.warn('Firebase init failed', e); return false; }
+}
 
 async function fbSaveMadsImage(key, dataUrl){
-  if(!fbDb) return false;
+  if(!fbEnsureInit()) return false;
   try{
     await fbDb.collection('mads_images').doc(key).set({ data: dataUrl, updatedAt: Date.now() });
     return true;
   }catch(e){ console.warn('Firestore save failed', e); return false; }
 }
 async function fbDeleteMadsImage(key){
-  if(!fbDb) return false;
+  if(!fbEnsureInit()) return false;
   try{ await fbDb.collection('mads_images').doc(key).delete(); return true; }
   catch(e){ console.warn('Firestore delete failed', e); return false; }
 }
 async function fbLoadMadsImagesOnLoad(){
-  if(!fbDb) return;
+  if(!fbEnsureInit()) return;
   try{
     const snap = await fbDb.collection('mads_images').get();
     for(const doc of snap.docs){
@@ -532,7 +535,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 5;
+const APP_BUILD = 7;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -4881,11 +4884,13 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
   <div class="visitorGateCard">
     ${data.logo ? `<img src="${data.logo}" class="vgLogo">` : '<div class="vgLogo" style="display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>'}
     <div class="vgTitle">${oc_escHtml(data.shopName)}</div>
-    <div class="vgSub">Please enter your details to view our catalog</div>
+    <div class="vgSub">Please enter your details once — we'll remember them for your next orders</div>
     <label>Your Name</label>
     <input id="vgName" placeholder="Enter your name">
     <label>Mobile Number</label>
     <input id="vgPhone" type="tel" inputmode="numeric" placeholder="10 digit number" maxlength="10">
+    <label>Full Delivery Address</label>
+    <textarea id="vgAddr" placeholder="House no., street, town, pincode" rows="3" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:10px;margin-top:4px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
     <div id="vgError" class="vgError" style="display:none;"></div>
     <button onclick="oc_submitVisitor()">Continue</button>
   </div>
@@ -5038,7 +5043,7 @@ function oc_checkVisitorGate(){
   let saved = null;
   try{ saved = JSON.parse(localStorage.getItem('kt_visitor')||'null'); }catch(e){}
   const gate = document.getElementById('visitorGate');
-  if(saved && saved.name && saved.phone){
+  if(saved && saved.name && saved.phone && saved.address){
     if(gate) gate.style.display='none';
     oc_logVisitor(saved.name, saved.phone);
     oc_loadMyOrderStatus();
@@ -5050,17 +5055,22 @@ function oc_checkVisitorGate(){
 function oc_submitVisitor(){
   const name = (document.getElementById('vgName').value||'').trim();
   const phone = (document.getElementById('vgPhone').value||'').trim();
+  const address = (document.getElementById('vgAddr').value||'').trim();
   const errEl = document.getElementById('vgError');
-  if(!name || phone.length<10){
-    errEl.textContent = 'Please enter your name and a valid 10-digit mobile number';
+  if(!name || phone.length<10 || !address){
+    errEl.textContent = 'Please enter your name, a valid 10-digit mobile number, and your full address';
     errEl.style.display='block';
     return;
   }
   errEl.style.display='none';
-  try{ localStorage.setItem('kt_visitor', JSON.stringify({name, phone})); }catch(e){}
+  try{ localStorage.setItem('kt_visitor', JSON.stringify({name, phone, address})); }catch(e){}
   document.getElementById('visitorGate').style.display='none';
   oc_logVisitor(name, phone);
   oc_loadMyOrderStatus();
+  if(oc_deferredInstallPrompt){
+    const bar = document.getElementById('installBar');
+    if(bar) bar.classList.add('show');
+  }
 }
 async function oc_loadMyOrderStatus(){
   if(!DATA.scriptUrl) return;
@@ -5099,7 +5109,7 @@ function oc_renderMyOrderBanner(o){
     </div>
   </div>\`;
 }
-document.getElementById('vgPhone').addEventListener('keydown', e=>{ if(e.key==='Enter') oc_submitVisitor(); });
+document.getElementById('vgPhone').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('vgAddr').focus(); } });
 document.getElementById('vgName').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('vgPhone').focus(); });
 oc_checkVisitorGate();
 
@@ -5161,6 +5171,14 @@ function oc_openCheckout(){
     \`<div class="cartitem"><span>\${i.title} x \${i.qty}</span><span>₹\${i.qty*i.price}</span></div>\`).join('');
   const total = items.reduce((a,b)=>a+b.qty*b.price,0);
   document.getElementById('modalTotal').innerText = total;
+  try{
+    const v = JSON.parse(localStorage.getItem('kt_visitor')||'null');
+    if(v){
+      document.getElementById('custName').value = v.name||'';
+      document.getElementById('custPhone').value = v.phone||'';
+      document.getElementById('custAddr').value = v.address||'';
+    }
+  }catch(e){}
   document.getElementById('checkoutModal').classList.add('open');
 }
 function oc_closeCheckout(){ document.getElementById('checkoutModal').classList.remove('open'); }
@@ -5171,6 +5189,7 @@ async function oc_placeOrder(){
   const address = document.getElementById('custAddr').value.trim();
   if(!name || phone.length<10){ alert('Please enter your name and a valid phone number'); return; }
   if(!address){ alert('Please enter your full address'); return; }
+  try{ localStorage.setItem('kt_visitor', JSON.stringify({name, phone, address})); }catch(e){}
   const items = Object.values(cart);
   if(items.length===0){ alert('Cart is empty'); return; }
   const itemsStr = items.map(i=>\`\${i.title} x\${i.qty} (₹\${i.price} each)\`).join('; ');
