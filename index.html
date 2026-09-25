@@ -537,7 +537,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 11;
+const APP_BUILD = 12;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -3665,6 +3665,7 @@ async function ocInitScreen(){
     oc_renderDefault();
   }
   oc_ensureCategoryDropdowns();
+  oc_ensureFlashNewsBar();
   const nameEl=document.getElementById('shopName');
   if(nameEl) nameEl.textContent = SETTINGS.shopName || 'MY SHOP';
   const logoImg=document.getElementById('logoImg');
@@ -4710,6 +4711,18 @@ function oc_ensureCategoryDropdowns(){
     const headEl = card.querySelector('.card-head');
     card.insertBefore(catEl, headEl || null);
   });
+}
+function oc_ensureFlashNewsBar(){
+  if(document.getElementById('flashNewsWrap')) return;
+  // Old brochure saved before the Flash News feature existed — add the bar now.
+  const brochure = document.getElementById('brochure');
+  const band = brochure ? brochure.querySelector('.band') : null;
+  if(!brochure || !band) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'flashnews';
+  wrap.id = 'flashNewsWrap';
+  wrap.innerHTML = '📢 <span class="editable" contenteditable="true" id="flashNews">New products just arrived! Check them out 🎉</span> <button class="flashclear" onclick="document.getElementById(\'flashNews\').innerText=\'\';">✕ Clear</button>';
+  brochure.insertBefore(wrap, band);
 }
 function oc_collectData(){
   oc_ensureCategoryDropdowns();
