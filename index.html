@@ -537,7 +537,7 @@ async function fbLoadMadsImagesOnLoad(){
     }
   }catch(e){ console.warn('Firestore load failed', e); }
 }
-const APP_BUILD = 12;
+const APP_BUILD = 13;
 const APP_BUILD_DATE = '23 Sep 2026';
 
 /* ================= LOGIN / ACCESS CONTROL ================= */
@@ -4802,24 +4802,32 @@ function oc_generateCustomerPage(){
     mLink.href = URL.createObjectURL(mBlob);
     mLink.download = 'customer-manifest.json';
     mLink.click();
-    toast('3 files downloaded — host all three in the same folder');
+    toast('3 files downloaded — upload all three to the SAME folder that has icon-192.png & icon-512.png');
   }, 1000);
 }
 
 function oc_buildManifestJson(data){
-  const icons = data.logo ? [
-    {src:data.logo, sizes:'192x192', type:'image/jpeg', purpose:'any'},
-    {src:data.logo, sizes:'512x512', type:'image/jpeg', purpose:'any'}
-  ] : [];
+  // NOTE: icons must be real, fetchable PNG files (icon-192.png / icon-512.png) that sit in the
+  // SAME folder as customer-order-page.html. A data: URI icon is NOT reliably accepted by Chrome
+  // for installability, especially on desktop.
   const manifest = {
+    id: 'kavitha-telecom-customer-app',
     name: data.shopName + ' - Order Now',
     short_name: data.shopName,
+    description: 'Browse products and place your order with ' + data.shopName,
     start_url: './customer-order-page.html',
-    scope: './',
+    scope: './customer-order-page.html',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui'],
+    orientation: 'any',
     background_color: '#e9e3f5',
     theme_color: '#2b0a35',
-    icons: icons
+    categories: ['shopping', 'business'],
+    icons: [
+      { src: './icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: './icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: './icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+    ]
   };
   return JSON.stringify(manifest, null, 2);
 }
@@ -4832,8 +4840,13 @@ function oc_buildCustomerHtml(data){
 <html lang="te"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${data.shopName} - Order Now</title>
 <meta name="theme-color" content="#2b0a35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="${data.shopName}">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="./customer-manifest.json">
-${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" href="${data.logo}">` : ''}
+<link rel="apple-touch-icon" href="./icon-apple-touch.png">
+${data.logo? `<link rel="icon" href="${data.logo}">` : '<link rel="icon" type="image/png" href="./icon-192.png">'}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
@@ -4964,7 +4977,7 @@ ${data.logo? `<link rel="icon" href="${data.logo}"><link rel="apple-touch-icon" 
     <div class="addr">📍 ${oc_escHtml(data.shopAddr)} &nbsp; 📞 ${oc_escHtml(data.shopPhone)}${data.shopEmail? ' &nbsp; ✉️ '+oc_escHtml(data.shopEmail) : ''}</div>
   </div>
 </div>
-<div class="installbar show" id="installBar">📲 Install this app for faster ordering next time! <button onclick="oc_installApp()">Install</button></div>
+<div class="installbar show" id="installBar">📲 Install this app on your phone or computer for faster ordering! <button onclick="oc_installApp()">Install</button></div>
 <div id="myOrderBanner"></div>
 
 <div class="modalbg" id="flashNewsModal">
@@ -5287,6 +5300,31 @@ function oc_isStandalone(){
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   }catch(e){ return false; }
 }
+function oc_installHelp(){
+  var uaL = (navigator.userAgent || '').toLowerCase();
+  var isIOS = /iphone|ipad|ipod/.test(uaL);
+  var isAndroid = /android/.test(uaL);
+  var isEdge = uaL.indexOf('edg/') !== -1;
+  var isFirefox = uaL.indexOf('firefox') !== -1 || uaL.indexOf('fxios') !== -1;
+  var isChromium = (uaL.indexOf('chrome') !== -1 || uaL.indexOf('crios') !== -1) && !isEdge;
+  var isMac = uaL.indexOf('macintosh') !== -1 && !isIOS;
+  if(isIOS){
+    return '📲 To install this app on iPhone / iPad:\\n\\n1. Tap the Share button (square with an arrow) at the bottom of Safari\\n2. Scroll down and tap "Add to Home Screen"\\n3. Tap "Add"\\n\\nThe app icon will then appear on your home screen.';
+  }
+  if(isAndroid){
+    return '📲 To install this app on your phone:\\n\\n1. Tap the ⋮ menu (top-right of Chrome)\\n2. Tap "Install app" or "Add to Home screen"\\n3. Tap "Install"\\n\\nThe app icon will then appear on your home screen.';
+  }
+  if(isEdge){
+    return '💻 To install this app on your computer (Microsoft Edge):\\n\\n1. Click the ... menu (top-right)\\n2. Click "Apps" > "Install this site as an app"\\n3. Click "Install"\\n\\nThe app opens in its own window and gets a Desktop / Taskbar shortcut.';
+  }
+  if(isFirefox){
+    return '💻 Firefox cannot install apps on a computer.\\n\\nPlease open this same link in Google Chrome or Microsoft Edge, then click Install again — it will install as a desktop app.';
+  }
+  if(isMac && !isChromium){
+    return '💻 To install this app on your Mac (Safari):\\n\\n1. Click File in the menu bar\\n2. Click "Add to Dock"\\n\\nOr open this link in Google Chrome and click Install.';
+  }
+  return '💻 To install this app on your computer (Google Chrome):\\n\\n1. Click the install icon (a small computer with a down arrow) at the right end of the address bar\\n   OR click the ⋮ menu > "Cast, save and share" > "Install page as app..."\\n2. Click "Install"\\n\\nThe app opens in its own window and gets a Desktop / Taskbar shortcut.';
+}
 async function oc_installApp(){
   if(oc_deferredInstallPrompt){
     oc_deferredInstallPrompt.prompt();
@@ -5296,12 +5334,7 @@ async function oc_installApp(){
     if(bar) bar.classList.remove('show');
     return;
   }
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(isIOS){
-    alert('📲 To install this app on iPhone/iPad:\\n\\n1. Tap the Share button (square with an arrow) at the bottom of Safari\\n2. Scroll down and tap "Add to Home Screen"\\n3. Tap "Add"\\n\\nThe app icon will then appear on your home screen.');
-  } else {
-    alert('📲 To install this app:\\n\\n1. Tap the ⋮ menu (top-right of Chrome)\\n2. Tap "Add to Home screen" or "Install app"\\n3. Tap "Install" or "Add"\\n\\nIf you don\\'t see this option, your browser may not support installing this app — you can still bookmark this page instead.');
-  }
+  alert(oc_installHelp());
 }
 window.addEventListener('appinstalled', ()=>{
   const bar = document.getElementById('installBar');
@@ -5313,7 +5346,7 @@ if(oc_isStandalone()){
 }
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./customer-sw.js').catch(()=>{ /* if the file is missing, the page still works, just without the install feature */ });
+    navigator.serviceWorker.register('./customer-sw.js', { scope: './customer-order-page.html' }).catch(()=>{ /* if the file is missing, the page still works, just without the install feature */ });
   });
 }
 
